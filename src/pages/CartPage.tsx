@@ -6,7 +6,6 @@ import {
   Plus,
   ShoppingCart,
   ArrowRight,
-  ShoppingBag,
 } from "lucide-react";
 import { useCart } from "../contexts/CartContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -21,23 +20,6 @@ export default function CartPage() {
   useEffect(() => {
     refresh();
   }, [refresh]);
-
-  if (!user) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 py-20 text-center">
-        <ShoppingBag className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
-        <h2 className="text-xl font-semibold text-neutral-900 mb-2">
-          Connectez-vous pour voir votre panier
-        </h2>
-        <p className="text-neutral-500 mb-6">
-          Vous devez être connecté pour gérer votre panier et passer commande.
-        </p>
-        <Link to="/login" className="btn-primary">
-          Se connecter
-        </Link>
-      </div>
-    );
-  }
 
   if (loading) {
     return (
@@ -75,6 +57,17 @@ export default function CartPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
+      {!user && (
+        <div className="mb-6 p-4 bg-primary-50 border border-primary-200 rounded-xl flex items-center justify-between">
+          <p className="text-sm text-primary-900">
+            Vous naviguez en tant qu'invité. Vous pouvez commander librement ou vous connecter.
+          </p>
+          <Link to="/login" className="btn-primary text-xs py-2 px-4">
+            Se connecter
+          </Link>
+        </div>
+      )}
+
       <h1 className="font-display text-3xl font-bold text-neutral-900 mb-8">
         Mon Panier
       </h1>
