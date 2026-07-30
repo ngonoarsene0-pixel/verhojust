@@ -35,6 +35,8 @@ export default function CheckoutPage() {
   const [processing, setProcessing] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<Commande | null>(null);
 
+  const [nom, setNom] = useState(user?.client.nomClient ?? "");
+  const [prenom, setPrenom] = useState(user?.client.prenomClient ?? "");
   const [adresse, setAdresse] = useState(user?.client.adresseClient ?? "");
   const [ville, setVille] = useState(user?.client.villeClient ?? "Yaoundé");
   const [telephone, setTelephone] = useState(user?.client.telephoneClient ?? "");
@@ -44,15 +46,6 @@ export default function CheckoutPage() {
   const deliveryFee =
     totalAmount >= BUSINESS.freeDeliveryThreshold ? 0 : BUSINESS.deliveryFee;
   const grandTotal = totalAmount + deliveryFee;
-
-  if (!user) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 py-20 text-center">
-        <p className="text-neutral-500 mb-4">Veuillez vous connecter pour passer commande.</p>
-        <Link to="/login" className="btn-primary">Se connecter</Link>
-      </div>
-    );
-  }
 
   if (items.length === 0 && !completedOrder) {
     return (
@@ -68,7 +61,8 @@ export default function CheckoutPage() {
     setProcessing(true);
     try {
       const commande = await orderService.createOrder({
-        idClient: user.client.idClient,
+        idClient: user ? user.client.idClient : null,
+        nomInvite: !user ? `${prenom} ${nom}` : undefined,
         adresseLivraisonCommande: `${adresse}, ${ville}`,
         modePaiementCommande: modePaiement,
         items,
@@ -137,10 +131,40 @@ export default function CheckoutPage() {
       {step === 1 && (
         <div className="grid md:grid-cols-2 gap-8 animate-fade-in">
           <div className="card p-6">
+            {!user && (
+              <div className="mb-4 p-3 bg-neutral-50 rounded-lg text-xs text-neutral-600 flex justify-between items-center">
+                <span>Vous commandez en tant qu'invité.</span>
+                <Link to="/login" className="text-primary-700 font-semibold underline">Se connecter</Link>
+              </div>
+            )}
             <h2 className="font-display font-bold text-lg text-neutral-900 mb-4">
-              Adresse de livraison
+              Informations de livraison
             </h2>
             <div className="space-y-4">
+              {!user && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="label">Prénom</label>
+                    <input
+                      type="text"
+                      value={prenom}
+                      onChange={(e) => setPrenom(e.target.value)}
+                      placeholder="Votre prénom"
+                      className="input"
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Nom</label>
+                    <input
+                      type="text"
+                      value={nom}
+                      onChange={(e) => setNom(e.target.value)}
+                      placeholder="Votre nom"
+                      className="input"
+                    />
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="label">Adresse complète</label>
                 <input
@@ -173,7 +197,7 @@ export default function CheckoutPage() {
             </div>
             <button
               onClick={() => setStep(2)}
-              disabled={!adresse || !ville || !telephone}
+              disabled={!adresse || !ville || !telephone || (!user && (!nom || !prenom))}
               className="btn-primary w-full mt-6"
             >
               Continuer vers le paiement <ChevronRight className="w-4 h-4" />
@@ -295,7 +319,7 @@ export default function CheckoutPage() {
             </h3>
             <div className="text-sm text-neutral-600 space-y-1">
               <p className="font-medium text-neutral-900">
-                {user.client.prenomClient} {user.client.nomClient}
+                {user ? `${user.client.prenomClient} ${user.client.nomClient}` : `${prenom} ${nom}`}
               </p>
               <p>{adresse}</p>
               <p>{ville}</p>
@@ -373,9 +397,15 @@ export default function CheckoutPage() {
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link to="/compte" className="btn-primary">
-              Suivre ma commande
-            </Link>
+            {user ? (
+              <Link to="/compte" className="btn-primary">
+                Suivre ma commande
+              </Link>
+            ) : (
+              <Link to="/login" className="btn-primary">
+                Créer un compte pour suivre mes commandes
+              </Link>
+            )}
             <Link to="/catalogue" className="btn-secondary">
               Continuer mes achats
             </Link>
