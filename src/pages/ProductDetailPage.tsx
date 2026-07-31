@@ -12,7 +12,6 @@ import {
 import { productService } from "../services/product.service";
 import type { ProduitWithType } from "../lib/types";
 import { useCart } from "../contexts/CartContext";
-import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
 import { formatPrice } from "../lib/format";
 
@@ -20,7 +19,6 @@ export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const { user } = useAuth();
   const { notify } = useToast();
 
   const [produit, setProduit] = useState<ProduitWithType | null>(null);
@@ -71,11 +69,6 @@ export default function ProductDetailPage() {
   }[stockStatus];
 
   const handleAddToCart = async () => {
-    if (!user) {
-      notify("Veuillez vous connecter pour ajouter au panier", "error");
-      navigate("/login");
-      return;
-    }
     if (stockStatus === "rupture") return;
     try {
       await addToCart(produit.idProduit, quantite);

@@ -3,13 +3,11 @@ import { ShoppingCart, AlertTriangle, X } from "lucide-react";
 import type { ProduitWithType } from "../lib/types";
 import { productService } from "../services/product.service";
 import { useCart } from "../contexts/CartContext";
-import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
 import { formatPrice } from "../lib/format";
 
 export default function ProductCard({ produit }: { produit: ProduitWithType }) {
   const { addToCart } = useCart();
-  const { user } = useAuth();
   const { notify } = useToast();
 
   const stockStatus = productService.getStockStatus(produit);
@@ -21,10 +19,6 @@ export default function ProductCard({ produit }: { produit: ProduitWithType }) {
 
   const handleAdd = async (e: React.MouseEvent) => {
     e.preventDefault();
-    if (!user) {
-      notify("Veuillez vous connecter pour ajouter au panier", "error");
-      return;
-    }
     if (stockStatus === "rupture") {
       notify("Produit en rupture de stock", "error");
       return;

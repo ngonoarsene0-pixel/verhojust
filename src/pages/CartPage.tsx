@@ -8,13 +8,11 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useCart } from "../contexts/CartContext";
-import { useAuth } from "../contexts/AuthContext";
 import { formatPrice } from "../lib/format";
 import { BUSINESS } from "../lib/db";
 
 export default function CartPage() {
   const { items, loading, refresh, updateQuantity, removeFromCart, totalAmount } = useCart();
-  const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -57,17 +55,6 @@ export default function CartPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      {!user && (
-        <div className="mb-6 p-4 bg-primary-50 border border-primary-200 rounded-xl flex items-center justify-between">
-          <p className="text-sm text-primary-900">
-            Vous naviguez en tant qu'invité. Vous pouvez commander librement ou vous connecter.
-          </p>
-          <Link to="/login" className="btn-primary text-xs py-2 px-4">
-            Se connecter
-          </Link>
-        </div>
-      )}
-
       <h1 className="font-display text-3xl font-bold text-neutral-900 mb-8">
         Mon Panier
       </h1>

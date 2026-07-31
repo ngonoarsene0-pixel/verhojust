@@ -128,3 +128,5 @@ export const cartService = {
     return items.reduce((sum, i) => sum + i.produit.prixProduit * i.quantiteProduit, 0);
   },
 };
+
+export const GUEST_CLIENT_ID = 0;
