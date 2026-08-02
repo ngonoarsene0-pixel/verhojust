@@ -6,7 +6,6 @@ import {
   Menu,
   X,
   Search,
-  Store,
   LogOut,
   LayoutDashboard,
   Package,
@@ -41,7 +40,7 @@ export default function Navbar() {
       {/* Top bar */}
       <div className="bg-primary-700 text-white text-xs">
         <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
-          <span className="hidden sm:inline">Livraison à Yaoundé — Mfoundi Mall</span>
+          <span className="hidden sm:inline">Livraison à Yaoundé et Douala</span>
           <span className="font-medium">{BUSINESS.phone}</span>
         </div>
       </div>
@@ -51,17 +50,11 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center shadow-md">
-              <Store className="w-5 h-5 text-white" />
-            </div>
-            <div className="hidden sm:block">
-              <p className="font-display font-bold text-sm text-neutral-900 leading-tight">
-                VERHOJUST
-              </p>
-              <p className="text-[10px] text-primary-600 font-semibold tracking-widest uppercase">
-                ÉPICERIE
-              </p>
-            </div>
+            <img 
+              src="/images/IMG-20250822-WA0184.jpg" 
+              alt="Verhojust Logo" 
+              className="h-12 w-auto object-contain rounded-lg"
+            />
           </Link>
 
           {/* Search (desktop) */}
