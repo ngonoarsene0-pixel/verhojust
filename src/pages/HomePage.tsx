@@ -6,12 +6,25 @@ import {
   Leaf,
   Clock,
   ArrowRight,
-  Store,
 } from "lucide-react";
 import { productService } from "../services/product.service";
 import type { ProduitWithType, TypeProduit } from "../lib/types";
 import ProductCard from "../components/ProductCard";
+import VideoCarousel from "../components/VideoCarousel";
 import { BUSINESS } from "../lib/db";
+
+/**
+ * Category image mapping — each category ID gets a representative photo.
+ * To use your own images, upload them to /public/images and update the URLs
+ * below to point to "/images/your-image.jpg".
+ */
+const categoryImages: Record<number, string> = {
+  1: "https://images.pexels.com/photos/32994324/pexels-photo-32994324.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+  2: "https://images.pexels.com/photos/678414/pexels-photo-678414.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+  3: "https://images.pexels.com/photos/616484/pexels-photo-616484.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+  4: "https://images.pexels.com/photos/5056631/pexels-photo-5056631.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+  5: "https://images.pexels.com/photos/34940649/pexels-photo-34940649.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+};
 
 export default function HomePage() {
   const [products, setProducts] = useState<ProduitWithType[]>([]);
@@ -49,11 +62,11 @@ export default function HomePage() {
               <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-extrabold text-neutral-900 leading-tight mb-4">
                 Votre épicerie
                 <span className="text-primary-600"> premium </span>
-                à Yaoundé
+                à Yaoundé et Douala
               </h1>
               <p className="text-lg text-neutral-600 mb-8 max-w-lg leading-relaxed">
                 Découvrez une sélection soignée de produits frais et d'épicerie,
-                livrés directement chez vous depuis Mfoundi Mall.
+                livrés rapidement à Yaoundé et Douala.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link to="/catalogue" className="btn-primary">
@@ -86,27 +99,38 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Features */}
+      {/* Features — Premium Banner */}
       <section className="max-w-7xl mx-auto px-4 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
           {[
-            { icon: Truck, title: "Livraison rapide", desc: "Dans toute la ville de Yaoundé" },
-            { icon: Leaf, title: "Produits frais", desc: "Directement de nos fournisseurs" },
-            { icon: ShieldCheck, title: "Paiement sécurisé", desc: "Espèces, Mobile Money, carte" },
-            { icon: Clock, title: "Service 7j/7", desc: "Toujours à votre service" },
+            { icon: Truck, title: "Livraison rapide", desc: "Yaoundé et Douala", gradient: "from-blue-500 to-cyan-400", bg: "bg-blue-50" },
+            { icon: Leaf, title: "Produits frais", desc: "Directement de nos fournisseurs", gradient: "from-emerald-500 to-green-400", bg: "bg-emerald-50" },
+            { icon: ShieldCheck, title: "Paiement sécurisé", desc: "Espèces, Mobile Money, carte", gradient: "from-amber-500 to-orange-400", bg: "bg-amber-50" },
+            { icon: Clock, title: "Service 7j/7", desc: "Toujours à votre service", gradient: "from-rose-500 to-pink-400", bg: "bg-rose-50" },
           ].map((f) => (
-            <div key={f.title} className="card p-5 text-center">
-              <div className="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center mx-auto mb-3">
-                <f.icon className="w-6 h-6 text-primary-600" />
+            <div
+              key={f.title}
+              className={`group relative ${f.bg} rounded-2xl p-5 text-center transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-white/60 overflow-hidden`}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-white/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="relative">
+                <div
+                  className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${f.gradient} flex items-center justify-center mx-auto mb-3 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}
+                >
+                  <f.icon className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="font-bold text-sm text-neutral-900 mb-1">{f.title}</h3>
+                <p className="text-xs text-neutral-500">{f.desc}</p>
               </div>
-              <h3 className="font-semibold text-sm text-neutral-900 mb-1">{f.title}</h3>
-              <p className="text-xs text-neutral-500">{f.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Categories */}
+      {/* Video Carousel */}
+      <VideoCarousel />
+
+      {/* Categories — Photo Cards */}
       <section className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex items-end justify-between mb-6">
           <div>
@@ -116,17 +140,30 @@ export default function HomePage() {
             <p className="text-neutral-500 mt-1">Parcourez par type de produit</p>
           </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {types.map((t) => (
             <Link
               key={t.idTypeProduit}
               to={`/catalogue?type=${t.idTypeProduit}`}
-              className="card p-5 text-center group hover:border-primary-300"
+              className="group relative aspect-[4/5] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
             >
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-50 to-emerald-100 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                <Store className="w-6 h-6 text-primary-600" />
+              <img
+                src={categoryImages[t.idTypeProduit] ?? "https://images.pexels.com/photos/678414/pexels-photo-678414.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"}
+                alt={t.nomTypeProduit}
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-4">
+                <p className="text-white font-display font-bold text-sm md:text-base drop-shadow-lg leading-tight">
+                  {t.nomTypeProduit}
+                </p>
+                <p className="text-white/70 text-xs mt-1 line-clamp-2 drop-shadow">
+                  {t.descriptionTypeProduit}
+                </p>
               </div>
-              <p className="text-sm font-semibold text-neutral-900">{t.nomTypeProduit}</p>
+              <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <ArrowRight className="w-4 h-4 text-white" />
+              </div>
             </Link>
           ))}
         </div>
@@ -181,7 +218,7 @@ export default function HomePage() {
               Faites vos courses en ligne dès aujourd'hui
             </h2>
             <p className="text-primary-100 mb-6 max-w-xl mx-auto">
-              Inscrivez-vous gratuitement et profitez d'une livraison rapide à Yaoundé.
+              Inscrivez-vous gratuitement et profitez d'une livraison rapide à Yaoundé et Douala.
               Frais de livraison: {BUSINESS.deliveryFee} {BUSINESS.currency}.
               Livraison gratuite dès {new Intl.NumberFormat("fr-FR").format(BUSINESS.freeDeliveryThreshold)} {BUSINESS.currency}.
             </p>

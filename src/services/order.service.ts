@@ -1,9 +1,9 @@
 /**
  * ============================================================================
- * Order Service — handles COMMANDE, LIGNECOMMANDE, VENTE, LIGNEVENTE
- * ============================================================================
- * Order creation (COMMANDE + LIGNECOMMANDE) and sale finalization
- * (VENTE + LIGNEVENTE). Also decrements product stock on order placement.
+ *  Order Service — handles COMMANDE, LIGNECOMMANDE, VENTE, LIGNEVENTE
+ *  ============================================================================
+ *  Order creation (COMMANDE + LIGNECOMMANDE) and sale finalization
+ *  (VENTE + LIGNEVENTE). Also decrements product stock on order placement.
  * ============================================================================
  */
 import { isMock, http } from "../lib/api";
@@ -27,10 +27,16 @@ import type {
 } from "../lib/types";
 
 export interface CreateOrderInput {
-  idClient?: number | null; // Rendu optionnel pour les invités
+  idClient: number;
   adresseLivraisonCommande: string;
   modePaiementCommande: "especes" | "mobile_money" | "carte";
   items: CartItem[];
+  guestInfo?: {
+    nom: string;
+    prenom: string;
+    email: string;
+    telephone: string;
+  };
 }
 
 export const orderService = {
@@ -47,7 +53,7 @@ export const orderService = {
 
     const commande: Commande = {
       idCommande,
-      idClient: input.idClient || 0, // Utilise 0 ou un ID invité par défaut si non connecté
+      idClient: input.idClient,
       dateCommande: now,
       statutCommande: "en_attente",
       montantTotalCommande: montantTotal,

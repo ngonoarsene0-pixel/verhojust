@@ -74,6 +74,6 @@ export const BUSINESS = {
   email: "contact@verhojust-epicerie.cm",
   currency: "FCFA",
   currencySymbol: "F",
-  deliveryFee: 1500,
+  deliveryFee: 1000,
   freeDeliveryThreshold: 50000,
 };
