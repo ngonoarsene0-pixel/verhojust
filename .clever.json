@@ -6,7 +6,8 @@
       "deploy_url": "https://push-n3-par-clevercloud-customers.services.clever-cloud.com/app_880d1176-e20e-4e82-8b62-f3194446217d.git",
       "git_ssh_url": "git+ssh://git@push-n3-par-clevercloud-customers.services.clever-cloud.com/app_880d1176-e20e-4e82-8b62-f3194446217d.git",
       "name": "verhojust.app",
-      "alias": "verhojustapp"
+      "alias": "verhojustapp",
+      "type": "node"
     }
   ]
 }
