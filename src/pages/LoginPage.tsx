@@ -93,31 +93,9 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-6 pt-6 border-t border-neutral-100">
-            <p className="text-xs text-neutral-400 text-center mb-3">
-              Comptes de démonstration:
+            <p className="text-xs text-neutral-400 text-center">
+              Vos identifiants vous ont été envoyés lors de votre inscription.
             </p>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <button
-                onClick={() => {
-                  setEmail("admin@verhojust.cm");
-                  setPassword("admin123");
-                }}
-                className="rounded-lg bg-neutral-50 border border-neutral-200 p-2 text-left hover:bg-neutral-100 transition-colors"
-              >
-                <p className="font-semibold text-neutral-700">Admin</p>
-                <p className="text-neutral-500">admin@verhojust.cm</p>
-              </button>
-              <button
-                onClick={() => {
-                  setEmail("aline@example.com");
-                  setPassword("client123");
-                }}
-                className="rounded-lg bg-neutral-50 border border-neutral-200 p-2 text-left hover:bg-neutral-100 transition-colors"
-              >
-                <p className="font-semibold text-neutral-700">Client</p>
-                <p className="text-neutral-500">aline@example.com</p>
-              </button>
-            </div>
           </div>
         </div>
 
