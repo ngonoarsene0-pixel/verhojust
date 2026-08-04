@@ -1,9 +1,9 @@
 /**
  * ============================================================================
- *  Database Schema Types — mapped 1:1 to the MySQL tables
+ * Database Schema Types — mapped 1:1 to the MySQL tables
  * ============================================================================
- *  CLIENT, COMPTE, COMMANDE, LIGNECOMMANDE, LIVRAISON, LIGNELIVRAISON,
- *  PANIER, REGROUPER, PRODUIT, TYPEPRODUIT, VENTE, LIGNEVENTE
+ * CLIENT, COMPTE, COMMANDE, LIGNECOMMANDE, LIVRAISON, LIGNELIVRAISON,
+ * PANIER, REGROUPER, PRODUIT, TYPEPRODUIT, VENTE, LIGNEVENTE
  * ============================================================================
  */
 
@@ -24,7 +24,7 @@ export interface Produit {
   quantiteStockProduit: number;
   seuilAlertProduit: number;
   imageProduit: string;
-  statutProduit: "actif" | "inactif";
+  statutProduit?: "actif" | "inactif";
   dateAjoutProduit: string;
 }
 
@@ -141,6 +141,17 @@ export interface CommandeWithDetails extends Commande {
   lignes?: (LigneCommande & { produit?: Produit })[];
   livraison?: Livraison;
   vente?: Vente;
+}
+
+/* -------------------------------- AVIS -------------------------------- */
+export interface Avis {
+  idAvis: number;
+  idProduit: number;
+  idClient: number | null;
+  nomAuteur: string;
+  noteAvis: number;
+  commentaireAvis: string;
+  dateAvis: string;
 }
 
 export interface AuthUser {

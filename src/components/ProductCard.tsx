@@ -2,13 +2,26 @@ import { Link } from "react-router-dom";
 import { ShoppingCart, AlertTriangle, X } from "lucide-react";
 import type { ProduitWithType } from "../lib/types";
 import { productService } from "../services/product.service";
+import { reviewService } from "../services/review.service";
 import { useCart } from "../contexts/CartContext";
 import { useToast } from "../contexts/ToastContext";
 import { formatPrice } from "../lib/format";
+import StarRating from "./StarRating";
+import { useEffect, useState } from "react";
 
 export default function ProductCard({ produit }: { produit: ProduitWithType }) {
   const { addToCart } = useCart();
   const { notify } = useToast();
+  const [avgRating, setAvgRating] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
+
+  useEffect(() => {
+    (async () => {
+      const reviews = await reviewService.getByProduct(produit.idProduit);
+      setAvgRating(reviewService.getAverage(reviews));
+      setReviewCount(reviews.length);
+    })();
+  }, [produit.idProduit]);
 
   const stockStatus = productService.getStockStatus(produit);
   const stockConfig = {
@@ -71,9 +84,15 @@ export default function ProductCard({ produit }: { produit: ProduitWithType }) {
 
       {/* Content */}
       <div className="p-4 flex flex-col flex-1">
-        <p className="text-xs text-neutral-500 line-clamp-2 mb-3 flex-1">
+        <p className="text-xs text-neutral-500 line-clamp-2 mb-2 flex-1">
           {produit.descriptionProduit}
         </p>
+        {reviewCount > 0 && (
+          <div className="flex items-center gap-1.5 mb-2">
+            <StarRating rating={avgRating} size={14} />
+            <span className="text-xs text-neutral-400">({reviewCount})</span>
+          </div>
+        )}
         <div className="flex items-center justify-between gap-2">
           <p className="font-display font-bold text-lg text-primary-700">
             {formatPrice(produit.prixProduit)}

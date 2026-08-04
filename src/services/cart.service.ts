@@ -1,58 +1,62 @@
 /**
  * ============================================================================
- *  Cart Service — handles PANIER & REGROUPER tables
- *  ============================================================================
- *  Cart management (add, update, remove, clear) persisted via PANIER and the
- *  REGROUPER join table. In mock mode, cart state is mirrored to localStorage
- *  so it survives reloads.
+ * Cart Service — handles PANIER & REGROUPER tables
+ * ============================================================================
+ * Cart management (add, update, remove, clear) persisted via PANIER and the
+ * REGROUPER join table in Supabase.
  * ============================================================================
  */
-import { isMock, http } from "../lib/api";
-import {
-  paniers,
-  counters,
-  mockRequest,
-  formatDate,
-} from "../lib/mockData";
-import { produits } from "../lib/mockData";
-import type { Panier, CartItem } from "../lib/types";
-
-const CART_KEY = "verhojust_cart";
-
-interface CartState {
-  idPanier: number | null;
-  items: { idProduit: number; quantiteProduit: number }[];
-}
-
-function loadCart(): CartState {
-  const raw = localStorage.getItem(CART_KEY);
-  if (raw) {
-    try {
-      return JSON.parse(raw) as CartState;
-    } catch {
-      /* fall through */
-    }
-  }
-  return { idPanier: null, items: [] };
-}
-
-function saveCart(state: CartState): void {
-  localStorage.setItem(CART_KEY, JSON.stringify(state));
-}
+import { supabase } from "../lib/supabase";
+import type { CartItem } from "../lib/types";
 
 export const cartService = {
   async getCart(idClient: number): Promise<CartItem[]> {
-    if (!isMock) return http.get<CartItem[]>(`/panier/${idClient}`);
+    let { data: panier, error: panierError } = await supabase
+      .from("panier")
+      .select("id_panier")
+      .eq("id_client", idClient)
+      .eq("statut_panier", "actif")
+      .maybeSingle();
 
-    const state = loadCart();
-    if (state.items.length === 0) return mockRequest([]);
-    const items: CartItem[] = state.items
-      .map((ri) => {
-        const produit = produits.find((p) => p.idProduit === ri.idProduit);
-        return produit ? { produit, quantiteProduit: ri.quantiteProduit } : null;
-      })
-      .filter(Boolean) as CartItem[];
-    return mockRequest(items);
+    if (panierError) throw panierError;
+
+    if (!panier) {
+      const { data: newPanier, error: createError } = await supabase
+        .from("panier")
+        .insert({ id_client: idClient, statut_panier: "actif" })
+        .select("id_panier")
+        .single();
+
+      if (createError) throw createError;
+      panier = newPanier;
+    }
+
+    const { data: lignes, error: lignesError } = await supabase
+      .from("regrouper")
+      .select("quantite_produit, produit(*, typeproduit(*))")
+      .eq("id_panier", panier.id_panier);
+
+    if (lignesError) throw lignesError;
+
+    return (lignes || []).map((l: any) => ({
+      quantiteProduit: l.quantite_produit,
+      produit: {
+        idProduit: l.produit.id_produit,
+        nomProduit: l.produit.nom_produit,
+        descriptionProduit: l.produit.description_produit,
+        prixProduit: l.produit.prix_produit,
+        quantiteStockProduit: l.produit.quantite_stock_produit,
+        seuilAlertProduit: l.produit.seuil_alert_produit,
+        imageProduit: l.produit.image_produit,
+        idTypeProduit: l.produit.id_type_produit,
+        dateAjoutProduit: l.produit.date_ajout_produit,
+        typeProduit: l.produit.typeproduit ? {
+          idTypeProduit: l.produit.typeproduit.id_type_produit,
+          nomTypeProduit: l.produit.typeproduit.nom_type_produit,
+          descriptionTypeProduit: l.produit.typeproduit.description_type_produit,
+        } : undefined,
+      },
+    }));
   },
 
   async addToCart(
@@ -60,27 +64,55 @@ export const cartService = {
     idProduit: number,
     quantite: number
   ): Promise<CartItem[]> {
-    if (!isMock)
-      return http.post<CartItem[]>(`/panier/${idClient}/add`, { idProduit, quantite });
+    let { data: panier, error: panierError } = await supabase
+      .from("panier")
+      .select("id_panier")
+      .eq("id_client", idClient)
+      .eq("statut_panier", "actif")
+      .maybeSingle();
 
-    const state = loadCart();
-    if (!state.idPanier) {
-      state.idPanier = counters.panier++;
-      const panier: Panier = {
-        idPanier: state.idPanier,
-        idClient,
-        dateCreationPanier: formatDate(new Date()).slice(0, 10),
-        statutPanier: "actif",
-      };
-      paniers.push(panier);
+    if (panierError) throw panierError;
+
+    if (!panier) {
+      const { data: newPanier, error: createError } = await supabase
+        .from("panier")
+        .insert({ id_client: idClient, statut_panier: "actif" })
+        .select("id_panier")
+        .single();
+
+      if (createError) throw createError;
+      panier = newPanier;
     }
-    const existing = state.items.find((i) => i.idProduit === idProduit);
+
+    const { data: existing, error: existingError } = await supabase
+      .from("regrouper")
+      .select("quantite_produit")
+      .eq("id_panier", panier.id_panier)
+      .eq("id_produit", idProduit)
+      .maybeSingle();
+
+    if (existingError) throw existingError;
+
     if (existing) {
-      existing.quantiteProduit += quantite;
+      const { error: updateError } = await supabase
+        .from("regrouper")
+        .update({ quantite_produit: existing.quantite_produit + quantite })
+        .eq("id_panier", panier.id_panier)
+        .eq("id_produit", idProduit);
+
+      if (updateError) throw updateError;
     } else {
-      state.items.push({ idProduit, quantiteProduit: quantite });
+      const { error: insertError } = await supabase
+        .from("regrouper")
+        .insert({
+          id_panier: panier.id_panier,
+          id_produit: idProduit,
+          quantite_produit: quantite,
+        });
+
+      if (insertError) throw insertError;
     }
-    saveCart(state);
+
     return this.getCart(idClient);
   },
 
@@ -89,39 +121,67 @@ export const cartService = {
     idProduit: number,
     quantite: number
   ): Promise<CartItem[]> {
-    if (!isMock)
-      return http.put<CartItem[]>(`/panier/${idClient}/update`, { idProduit, quantite });
+    const { data: panier } = await supabase
+      .from("panier")
+      .select("id_panier")
+      .eq("id_client", idClient)
+      .eq("statut_panier", "actif")
+      .maybeSingle();
 
-    const state = loadCart();
-    const item = state.items.find((i) => i.idProduit === idProduit);
-    if (item) {
-      if (quantite <= 0) {
-        state.items = state.items.filter((i) => i.idProduit !== idProduit);
-      } else {
-        item.quantiteProduit = quantite;
-      }
-      saveCart(state);
+    if (!panier) return [];
+
+    if (quantite <= 0) {
+      return this.removeFromCart(idClient, idProduit);
     }
+
+    const { error } = await supabase
+      .from("regrouper")
+      .update({ quantite_produit: quantite })
+      .eq("id_panier", panier.id_panier)
+      .eq("id_produit", idProduit);
+
+    if (error) throw error;
+
     return this.getCart(idClient);
   },
 
   async removeFromCart(idClient: number, idProduit: number): Promise<CartItem[]> {
-    if (!isMock)
-      return http.delete<CartItem[]>(`/panier/${idClient}/remove/${idProduit}`);
+    const { data: panier } = await supabase
+      .from("panier")
+      .select("id_panier")
+      .eq("id_client", idClient)
+      .eq("statut_panier", "actif")
+      .maybeSingle();
 
-    const state = loadCart();
-    state.items = state.items.filter((i) => i.idProduit !== idProduit);
-    saveCart(state);
+    if (!panier) return [];
+
+    const { error } = await supabase
+      .from("regrouper")
+      .delete()
+      .eq("id_panier", panier.id_panier)
+      .eq("id_produit", idProduit);
+
+    if (error) throw error;
+
     return this.getCart(idClient);
   },
 
   async clearCart(idClient: number): Promise<void> {
-    if (!isMock) return http.delete<void>(`/panier/${idClient}/clear`);
+    const { data: panier } = await supabase
+      .from("panier")
+      .select("id_panier")
+      .eq("id_client", idClient)
+      .eq("statut_panier", "actif")
+      .maybeSingle();
 
-    const state = loadCart();
-    state.items = [];
-    saveCart(state);
-    return mockRequest(undefined);
+    if (!panier) return;
+
+    const { error } = await supabase
+      .from("regrouper")
+      .delete()
+      .eq("id_panier", panier.id_panier);
+
+    if (error) throw error;
   },
 
   async getCartTotal(items: CartItem[]): Promise<number> {

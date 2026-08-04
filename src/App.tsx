@@ -4,6 +4,8 @@ import { CartProvider } from "./contexts/CartContext";
 import { ToastProvider } from "./contexts/ToastContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import WhatsAppButton from "./components/WhatsAppButton";
+import SupportChat from "./components/SupportChat";
 import { ProtectedRoute, AdminRoute } from "./components/ProtectedRoute";
 import HomePage from "./pages/HomePage";
 import CatalogPage from "./pages/CatalogPage";
@@ -30,22 +32,8 @@ function App() {
                   <Route path="/produit/:id" element={<ProductDetailPage />} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/signup" element={<SignupPage />} />
-                  <Route
-                    path="/panier"
-                    element={
-                      <ProtectedRoute>
-                        <CartPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/checkout"
-                    element={
-                      <ProtectedRoute>
-                        <CheckoutPage />
-                      </ProtectedRoute>
-                    }
-                  />
+                  <Route path="/panier" element={<CartPage />} />
+                  <Route path="/checkout" element={<CheckoutPage />} />
                   <Route
                     path="/compte"
                     element={
@@ -64,6 +52,8 @@ function App() {
                   />
                 </Routes>
               </main>
+              <WhatsAppButton />
+              <SupportChat />
               <Footer />
             </div>
           </CartProvider>

@@ -1,79 +1,120 @@
 /**
  * ============================================================================
- *  Delivery Service — handles LIVRAISON & LIGNELIVRAISON tables
- *  ============================================================================
- *  Delivery creation (linked to COMMANDE), status tracking, and history.
+ * Delivery Service — handles LIVRAISON & LIGNELIVRAISON tables
+ * ============================================================================
+ * Delivery creation (linked to COMMANDE), status tracking, and history.
  * ============================================================================
  */
-import { isMock, http } from "../lib/api";
-import {
-  livraisons,
-  ligneLivraisons,
-  counters,
-  mockRequest,
-  formatDate,
-  ligneCommandes,
-  commandes,
-} from "../lib/mockData";
+import { supabase } from "../lib/supabase";
 import type { Livraison, LigneLivraison } from "../lib/types";
 
 export const deliveryService = {
   async createDelivery(idCommande: number, adresseLivraison: string): Promise<Livraison> {
-    if (!isMock) return http.post<Livraison>("/livraisons", { idCommande, adresseLivraison });
+    const datePrevue = new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10);
 
-    const idLivraison = counters.livraison++;
-    const commande = commandes.find((c) => c.idCommande === idCommande);
-    if (!commande) throw new Error("Commande introuvable");
+    const { data, error } = await supabase
+      .from("livraison")
+      .insert({
+        id_commande: idCommande,
+        adresse_livraison: adresseLivraison,
+        statut_livraison: "programmee",
+        date_livraison_prevue: datePrevue,
+        livreur: "À assigner",
+        note_livraison: "",
+      })
+      .select()
+      .single();
 
-    const livraison: Livraison = {
-      idLivraison,
-      idCommande,
-      dateLivraisonPrevue: formatDate(new Date(Date.now() + 2 * 86400000)).slice(0, 10),
-      dateLivraisonReelle: null,
-      statutLivraison: "programmee",
-      adresseLivraison,
-      livreur: "À assigner",
-      noteLivraison: "",
-    };
-    livraisons.push(livraison);
+    if (error) throw error;
 
-    // Copy order lines into delivery lines
-    const lignes = ligneCommandes.filter((l) => l.idCommande === idCommande);
-    for (const l of lignes) {
-      const ll: LigneLivraison = {
-        idLigneLivraison: counters.ligneLivraison++,
-        idLivraison,
-        idProduit: l.idProduit,
-        quantiteProduit: l.quantiteProduit,
-      };
-      ligneLivraisons.push(ll);
+    // Récupérer les lignes de la commande pour alimenter l'historique si nécessaire
+    const { data: lignesCommande } = await supabase
+      .from("lignecommande")
+      .select("*")
+      .eq("id_commande", idCommande);
+
+    if (lignesCommande) {
+      for (const l of lignesCommande) {
+        await supabase.from("lignelivraison").insert({
+          id_livraison: data.id_livraison,
+          id_produit: l.id_produit,
+          quantite_produit: l.quantite_produit,
+        });
+      }
     }
 
-    return mockRequest(livraison);
+    return {
+      idLivraison: data.id_livraison,
+      idCommande: data.id_commande,
+      dateLivraisonPrevue: data.date_livraison_prevue,
+      dateLivraisonReelle: data.date_livraison_reelle,
+      statutLivraison: data.statut_livraison,
+      adresseLivraison: data.adresse_livraison,
+      livreur: data.livreur,
+      noteLivraison: data.note_livraison,
+    };
   },
 
   async getByOrder(idCommande: number): Promise<Livraison | null> {
-    if (!isMock) return http.get<Livraison>(`/livraisons/commande/${idCommande}`);
-    const l = livraisons.find((x) => x.idCommande === idCommande);
-    return mockRequest(l ?? null);
+    const { data, error } = await supabase
+      .from("livraison")
+      .select("*")
+      .eq("id_commande", idCommande)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return null;
+
+    return {
+      idLivraison: data.id_livraison,
+      idCommande: data.id_commande,
+      dateLivraisonPrevue: data.date_livraison_prevue,
+      dateLivraisonReelle: data.date_livraison_reelle,
+      statutLivraison: data.statut_livraison,
+      adresseLivraison: data.adresse_livraison,
+      livreur: data.livreur,
+      noteLivraison: data.note_livraison,
+    };
   },
 
   async getByClient(idClient: number): Promise<Livraison[]> {
-    if (!isMock) return http.get<Livraison[]>(`/livraisons/client/${idClient}`);
-    const result = livraisons.filter((l) => {
-      const c = commandes.find((cmd) => cmd.idCommande === l.idCommande);
-      return c?.idClient === idClient;
-    });
-    return mockRequest(result);
+    const { data, error } = await supabase
+      .from("livraison")
+      .select(`*, commande!inner(id_client)`)
+      .eq("commande.id_client", idClient);
+
+    if (error) throw error;
+
+    return (data || []).map((l: any) => ({
+      idLivraison: l.id_livraison,
+      idCommande: l.id_commande,
+      dateLivraisonPrevue: l.date_livraison_prevue,
+      dateLivraisonReelle: l.date_livraison_reelle,
+      statutLivraison: l.statut_livraison,
+      adresseLivraison: l.adresse_livraison,
+      livreur: l.livreur,
+      noteLivraison: l.note_livraison,
+    }));
   },
 
   async getAll(): Promise<(Livraison & { reference?: string })[]> {
-    if (!isMock) return http.get<(Livraison & { reference?: string })[]>("/livraisons");
-    const result = livraisons.map((l) => {
-      const c = commandes.find((cmd) => cmd.idCommande === l.idCommande);
-      return { ...l, reference: c?.referenceCommande };
-    });
-    return mockRequest(result);
+    const { data, error } = await supabase
+      .from("livraison")
+      .select(`*, commande(reference_commande)`);
+
+    if (error) throw error;
+
+    return (data || []).map((l: any) => ({
+      idLivraison: l.id_livraison,
+      idCommande: l.id_commande,
+      dateLivraisonPrevue: l.date_livraison_prevue,
+      dateLivraisonReelle: l.date_livraison_reelle,
+      statutLivraison: l.statut_livraison,
+      adresseLivraison: l.adresse_livraison,
+      livreur: l.livreur,
+      noteLivraison: l.note_livraison,
+      reference: l.commande?.reference_commande,
+    }));
   },
 
   async updateStatus(
@@ -81,18 +122,37 @@ export const deliveryService = {
     statut: Livraison["statutLivraison"],
     note?: string
   ): Promise<Livraison> {
-    if (!isMock) return http.patch<Livraison>(`/livraisons/${idLivraison}`, { statut, note });
-
-    const l = livraisons.find((x) => x.idLivraison === idLivraison);
-    if (!l) throw new Error("Livraison introuvable");
-    l.statutLivraison = statut;
-    if (note !== undefined) l.noteLivraison = note;
+    const updateData: any = { statut_livraison: statut };
+    if (note !== undefined) updateData.note_livraison = note;
     if (statut === "livree") {
-      l.dateLivraisonReelle = formatDate(new Date()).slice(0, 10);
-      // Also update the commande status
-      const c = commandes.find((cmd) => cmd.idCommande === l.idCommande);
-      if (c) c.statutCommande = "livree";
+      updateData.date_livraison_reelle = new Date().toISOString().slice(0, 10);
     }
-    return mockRequest(l);
+
+    const { data, error } = await supabase
+      .from("livraison")
+      .update(updateData)
+      .eq("id_livraison", idLivraison)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    if (statut === "livree" && data) {
+      await supabase
+        .from("commande")
+        .update({ statut_commande: "livree" })
+        .eq("id_commande", data.id_commande);
+    }
+
+    return {
+      idLivraison: data.id_livraison,
+      idCommande: data.id_commande,
+      dateLivraisonPrevue: data.date_livraison_prevue,
+      dateLivraisonReelle: data.date_livraison_reelle,
+      statutLivraison: data.statut_livraison,
+      adresseLivraison: data.adresse_livraison,
+      livreur: data.livreur,
+      noteLivraison: data.note_livraison,
+    };
   },
 };

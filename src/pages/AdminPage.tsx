@@ -12,16 +12,18 @@ import {
   Save,
   TrendingUp,
   DollarSign,
-  Boxes,
+  Users,
+  MapPin,
 } from "lucide-react";
 import { productService } from "../services/product.service";
 import { orderService } from "../services/order.service";
 import { deliveryService } from "../services/delivery.service";
-import type { ProduitWithType, TypeProduit, CommandeWithDetails, Livraison, Produit } from "../lib/types";
+import { authService } from "../services/auth.service";
+import type { ProduitWithType, TypeProduit, CommandeWithDetails, Livraison, Produit, Client } from "../lib/types";
 import { formatPrice, formatDate, formatDateTime } from "../lib/format";
 import { useToast } from "../contexts/ToastContext";
 
-type Tab = "dashboard" | "products" | "orders" | "deliveries";
+type Tab = "dashboard" | "products" | "orders" | "deliveries" | "clients";
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>("dashboard");
@@ -32,6 +34,7 @@ export default function AdminPage() {
   const [types, setTypes] = useState<TypeProduit[]>([]);
   const [orders, setOrders] = useState<CommandeWithDetails[]>([]);
   const [livraisons, setLivraisons] = useState<(Livraison & { reference?: string })[]>([]);
+  const [clientsList, setClientsList] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Product form modal
@@ -39,16 +42,18 @@ export default function AdminPage() {
   const [editingProduct, setEditingProduct] = useState<Produit | null>(null);
 
   const refreshAll = async () => {
-    const [prods, cats, ords, dels] = await Promise.all([
+    const [prods, cats, ords, dels, clts] = await Promise.all([
       productService.getAllProducts(),
       productService.getAllTypes(),
       orderService.getAllOrders(),
       deliveryService.getAll(),
+      authService.getAllClients(),
     ]);
     setProducts(prods);
     setTypes(cats);
     setOrders(ords);
     setLivraisons(dels);
+    setClientsList(clts);
     setLoading(false);
   };
 
@@ -110,11 +115,19 @@ export default function AdminPage() {
     }
   };
 
+  const yaoundeOrders = orders.filter((o) => o.adresseLivraisonCommande.toLowerCase().includes("yaoundé") || o.adresseLivraisonCommande.toLowerCase().includes("yaounde"));
+  const doualaOrders = orders.filter((o) => o.adresseLivraisonCommande.toLowerCase().includes("douala"));
+  const yaoundeDeliveries = livraisons.filter((l) => l.adresseLivraison.toLowerCase().includes("yaoundé") || l.adresseLivraison.toLowerCase().includes("yaounde"));
+  const doualaDeliveries = livraisons.filter((l) => l.adresseLivraison.toLowerCase().includes("douala"));
+  const yaoundeClients = clientsList.filter((c) => c.villeClient.toLowerCase().includes("yaoundé") || c.villeClient.toLowerCase().includes("yaounde"));
+  const doualaClients = clientsList.filter((c) => c.villeClient.toLowerCase().includes("douala"));
+
   const tabs: { id: Tab; label: string; icon: typeof Package }[] = [
     { id: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
     { id: "products", label: "Produits", icon: Package },
     { id: "orders", label: "Commandes", icon: ShoppingCart },
     { id: "deliveries", label: "Livraisons", icon: Truck },
+    { id: "clients", label: "Clients", icon: Users },
   ];
 
   if (loading) {
@@ -173,7 +186,7 @@ export default function AdminPage() {
             {[
               { label: "Chiffre d'affaires", value: formatPrice(totalRevenue), icon: DollarSign, color: "text-emerald-600 bg-emerald-50" },
               { label: "Commandes", value: String(orders.length), icon: ShoppingCart, color: "text-blue-600 bg-blue-50" },
-              { label: "Produits", value: String(products.length), icon: Boxes, color: "text-primary-600 bg-primary-50" },
+              { label: "Clients", value: String(clientsList.length), icon: Users, color: "text-violet-600 bg-violet-50" },
               { label: "Stock bas", value: String(lowStock.length), icon: AlertTriangle, color: "text-accent-600 bg-accent-50" },
             ].map((stat) => (
               <div key={stat.label} className="card p-5">
@@ -226,6 +239,50 @@ export default function AdminPage() {
               </div>
             </div>
           )}
+
+          {/* City-based delivery tracking */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="card p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <MapPin className="w-5 h-5 text-primary-600" />
+                <h3 className="font-semibold text-neutral-900">Yaoundé</h3>
+              </div>
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="rounded-xl bg-primary-50 p-3">
+                  <p className="text-2xl font-bold text-primary-700">{yaoundeOrders.length}</p>
+                  <p className="text-xs text-neutral-500">Commandes</p>
+                </div>
+                <div className="rounded-xl bg-blue-50 p-3">
+                  <p className="text-2xl font-bold text-blue-700">{yaoundeDeliveries.length}</p>
+                  <p className="text-xs text-neutral-500">Livraisons</p>
+                </div>
+                <div className="rounded-xl bg-violet-50 p-3">
+                  <p className="text-2xl font-bold text-violet-700">{yaoundeClients.length}</p>
+                  <p className="text-xs text-neutral-500">Clients</p>
+                </div>
+              </div>
+            </div>
+            <div className="card p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <MapPin className="w-5 h-5 text-emerald-600" />
+                <h3 className="font-semibold text-neutral-900">Douala</h3>
+              </div>
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="rounded-xl bg-emerald-50 p-3">
+                  <p className="text-2xl font-bold text-emerald-700">{doualaOrders.length}</p>
+                  <p className="text-xs text-neutral-500">Commandes</p>
+                </div>
+                <div className="rounded-xl bg-blue-50 p-3">
+                  <p className="text-2xl font-bold text-blue-700">{doualaDeliveries.length}</p>
+                  <p className="text-xs text-neutral-500">Livraisons</p>
+                </div>
+                <div className="rounded-xl bg-violet-50 p-3">
+                  <p className="text-2xl font-bold text-violet-700">{doualaClients.length}</p>
+                  <p className="text-xs text-neutral-500">Clients</p>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Recent orders */}
           <div className="card p-6">
@@ -446,6 +503,71 @@ export default function AdminPage() {
               </div>
             ))
           )}
+        </div>
+      )}
+
+      {/* CLIENTS TAB */}
+      {tab === "clients" && (
+        <div className="animate-fade-in">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="card p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <MapPin className="w-5 h-5 text-primary-600" />
+                <h3 className="font-semibold text-neutral-900">Clients à Yaoundé</h3>
+              </div>
+              <p className="text-3xl font-bold text-primary-700">{yaoundeClients.length}</p>
+            </div>
+            <div className="card p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <MapPin className="w-5 h-5 text-emerald-600" />
+                <h3 className="font-semibold text-neutral-900">Clients à Douala</h3>
+              </div>
+              <p className="text-3xl font-bold text-emerald-700">{doualaClients.length}</p>
+            </div>
+          </div>
+          <div className="card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-neutral-50 border-b border-neutral-200">
+                  <tr>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">Client</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase hidden md:table-cell">Contact</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">Ville</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase hidden md:table-cell">Inscrit le</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100">
+                  {clientsList.map((c) => (
+                    <tr key={c.idClient} className="hover:bg-neutral-50">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-sm font-bold">
+                            {c.prenomClient[0]?.toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-neutral-900">{c.prenomClient} {c.nomClient}</p>
+                            <p className="text-xs text-neutral-500 md:hidden">{c.telephoneClient}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-neutral-600 hidden md:table-cell">
+                        <p>{c.telephoneClient}</p>
+                        <p className="text-xs text-neutral-400">{c.emailClient}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`badge ${c.villeClient.toLowerCase().includes("douala") ? "bg-emerald-100 text-emerald-700" : "bg-primary-100 text-primary-700"}`}>
+                          {c.villeClient}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-neutral-500 hidden md:table-cell">
+                        {formatDate(c.dateInscription)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
 

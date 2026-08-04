@@ -14,16 +14,14 @@ import VideoCarousel from "../components/VideoCarousel";
 import { BUSINESS } from "../lib/db";
 
 /**
- * Category image mapping — each category ID gets a representative photo.
- * To use your own images, upload them to /public/images and update the URLs
- * below to point to "/images/your-image.jpg".
+ * Category image mapping — pointing to your local files in /public/images/
  */
 const categoryImages: Record<number, string> = {
-  1: "https://images.pexels.com/photos/32994324/pexels-photo-32994324.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
-  2: "https://images.pexels.com/photos/678414/pexels-photo-678414.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
-  3: "https://images.pexels.com/photos/616484/pexels-photo-616484.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
-  4: "https://images.pexels.com/photos/5056631/pexels-photo-5056631.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
-  5: "https://images.pexels.com/photos/34940649/pexels-photo-34940649.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+  1: "/images/pexels-photo-32994324.avif",
+  2: "/images/pexels-photo-678414.avif",
+  3: "/images/pexels-photo-616484.avif",
+  4: "/images/pexels-photo-5056631.avif",
+  5: "/images/pexels-photo-34940649.avif",
 };
 
 export default function HomePage() {
@@ -43,7 +41,7 @@ export default function HomePage() {
     })();
   }, []);
 
-  const featured = products.filter((p) => p.statutProduit === "actif").slice(0, 8);
+  const featured = products.slice(0, 8);
 
   return (
     <div>
@@ -148,7 +146,7 @@ export default function HomePage() {
               className="group relative aspect-[4/5] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
             >
               <img
-                src={categoryImages[t.idTypeProduit] ?? "https://images.pexels.com/photos/678414/pexels-photo-678414.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"}
+                src={categoryImages[t.idTypeProduit] ?? "/images/pexels-photo-678414.avif"}
                 alt={t.nomTypeProduit}
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />

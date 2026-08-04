@@ -11,7 +11,6 @@ import {
   Banknote,
   Smartphone,
   User,
-  Mail,
   Phone,
 } from "lucide-react";
 import { useCart } from "../contexts/CartContext";
@@ -19,7 +18,6 @@ import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
 import { orderService } from "../services/order.service";
 import { deliveryService } from "../services/delivery.service";
-import { GUEST_CLIENT_ID } from "../services/cart.service";
 import { formatPrice } from "../lib/format";
 import { BUSINESS } from "../lib/db";
 import type { Commande } from "../lib/types";
@@ -39,9 +37,8 @@ export default function CheckoutPage() {
   const [processing, setProcessing] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<Commande | null>(null);
 
-  const [guestNom, setGuestNom] = useState("");
-  const [guestPrenom, setGuestPrenom] = useState("");
-  const [guestEmail, setGuestEmail] = useState("");
+  const [guestNom, setGuestNom] = useState(user?.client.nomClient ?? "");
+  const [guestPrenom, setGuestPrenom] = useState(user?.client.prenomClient ?? "");
   const [adresse, setAdresse] = useState(user?.client.adresseClient ?? "");
   const [ville, setVille] = useState(user?.client.villeClient ?? "Yaoundé");
   const [telephone, setTelephone] = useState(user?.client.telephoneClient ?? "");
@@ -54,10 +51,14 @@ export default function CheckoutPage() {
 
   const isGuest = !user;
 
-  const guestInfoValid = guestNom.trim() && guestPrenom.trim() && guestEmail.trim() && telephone.trim();
-  const step1Valid = isGuest
-    ? !!(guestInfoValid && adresse && ville)
-    : !!(adresse && ville && telephone);
+  // Validation : nom, prénom, adresse, ville et téléphone sont requis
+  const step1Valid = !!(
+    guestNom.trim() &&
+    guestPrenom.trim() &&
+    adresse.trim() &&
+    ville.trim() &&
+    telephone.trim()
+  );
 
   if (items.length === 0 && !completedOrder) {
     return (
@@ -72,15 +73,20 @@ export default function CheckoutPage() {
   const handlePlaceOrder = async () => {
     setProcessing(true);
     try {
-      const clientId = user?.client.idClient ?? GUEST_CLIENT_ID;
+      // Si l'utilisateur est connecté, on utilise son idClient, sinon on passe 0 pour forcer la création d'un nouveau client dans Supabase
+      const clientId = user?.client.idClient ?? 0;
+      
       const commande = await orderService.createOrder({
         idClient: clientId,
         adresseLivraisonCommande: `${adresse}, ${ville}`,
         modePaiementCommande: modePaiement,
         items,
-        guestInfo: isGuest
-          ? { nom: guestNom, prenom: guestPrenom, email: guestEmail, telephone }
-          : undefined,
+        guestInfo: { 
+          nom: guestNom, 
+          prenom: guestPrenom, 
+          email: `${guestPrenom.toLowerCase()}.${guestNom.toLowerCase()}@client.local`, 
+          telephone 
+        },
       });
 
       await orderService.finalizeSale(commande.idCommande, modePaiement);
@@ -100,9 +106,7 @@ export default function CheckoutPage() {
     }
   };
 
-  const fullName = isGuest
-    ? `${guestPrenom} ${guestNom}`
-    : `${user!.client.prenomClient} ${user!.client.nomClient}`;
+  const fullName = `${guestPrenom} ${guestNom}`;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -119,7 +123,7 @@ export default function CheckoutPage() {
             <Link to="/login" className="font-semibold underline hover:text-primary-900">
               Connectez-vous
             </Link>{" "}
-            pour suivre vos commandes, ou créez un compte plus tard.
+            pour retrouver vos informations rapidement.
           </p>
         </div>
       )}
@@ -168,70 +172,61 @@ export default function CheckoutPage() {
               Informations de livraison
             </h2>
             <div className="space-y-4">
-              {isGuest && (
-                <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="label">Prénom</label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                        <input
-                          type="text"
-                          required
-                          value={guestPrenom}
-                          onChange={(e) => setGuestPrenom(e.target.value)}
-                          placeholder="Aline"
-                          className="input pl-10"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="label">Nom</label>
-                      <input
-                        type="text"
-                        required
-                        value={guestNom}
-                        onChange={(e) => setGuestNom(e.target.value)}
-                        placeholder="Nkomo"
-                        className="input"
-                      />
-                    </div>
+              {/* Prénom et Nom */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Prénom</label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                    <input
+                      type="text"
+                      required
+                      value={guestPrenom}
+                      onChange={(e) => setGuestPrenom(e.target.value)}
+                      placeholder="Aline"
+                      className="input pl-10"
+                    />
                   </div>
-                  <div>
-                    <label className="label">Email</label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                      <input
-                        type="email"
-                        required
-                        value={guestEmail}
-                        onChange={(e) => setGuestEmail(e.target.value)}
-                        placeholder="votre@email.com"
-                        className="input pl-10"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
+                </div>
+                <div>
+                  <label className="label">Nom</label>
+                  <input
+                    type="text"
+                    required
+                    value={guestNom}
+                    onChange={(e) => setGuestNom(e.target.value)}
+                    placeholder="Nkomo"
+                    className="input"
+                  />
+                </div>
+              </div>
+
+              {/* Adresse complète */}
               <div>
                 <label className="label">Adresse complète</label>
                 <input
                   type="text"
+                  required
                   value={adresse}
                   onChange={(e) => setAdresse(e.target.value)}
                   placeholder="Ex: Quartier Bastos, Rue 1.234"
                   className="input"
                 />
               </div>
+
+              {/* Ville */}
               <div>
                 <label className="label">Ville</label>
                 <input
                   type="text"
+                  required
                   value={ville}
                   onChange={(e) => setVille(e.target.value)}
                   className="input"
                 />
               </div>
+
+              {/* Téléphone */}
               <div>
                 <label className="label">Téléphone</label>
                 <div className="relative">
@@ -247,6 +242,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
             </div>
+
             <button
               onClick={() => setStep(2)}
               disabled={!step1Valid}
@@ -371,7 +367,6 @@ export default function CheckoutPage() {
             </h3>
             <div className="text-sm text-neutral-600 space-y-1">
               <p className="font-medium text-neutral-900">{fullName}</p>
-              {isGuest && <p>{guestEmail}</p>}
               <p>{adresse}</p>
               <p>{ville}</p>
               <p>{telephone}</p>
@@ -418,7 +413,7 @@ export default function CheckoutPage() {
               <div className="text-right">
                 <p className="text-xs text-neutral-500">Total payé</p>
                 <p className="font-display font-bold text-lg text-primary-700">
-                  {formatPrice(completedOrder.montantTotalCommande + deliveryFee)}
+                  {formatPrice(completedOrder.montantTotalCommande)}
                 </p>
               </div>
             </div>

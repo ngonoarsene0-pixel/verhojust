@@ -10,29 +10,41 @@ import {
   Store,
 } from "lucide-react";
 import { productService } from "../services/product.service";
-import type { ProduitWithType } from "../lib/types";
+import { reviewService } from "../services/review.service";
+import type { ProduitWithType, Avis } from "../lib/types";
+import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
 import { useToast } from "../contexts/ToastContext";
-import { formatPrice } from "../lib/format";
+import { formatPrice, formatDate } from "../lib/format";
+import StarRating from "../components/StarRating";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { notify } = useToast();
+  const { user } = useAuth();
 
   const [produit, setProduit] = useState<ProduitWithType | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantite, setQuantite] = useState(1);
+  const [reviews, setReviews] = useState<Avis[]>([]);
+  const [newRating, setNewRating] = useState(5);
+  const [newComment, setNewComment] = useState("");
+  const [reviewAuthor, setReviewAuthor] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       const p = await productService.getById(Number(id));
       setProduit(p);
+      const r = await reviewService.getByProduct(Number(id));
+      setReviews(r);
+      setReviewAuthor(user?.client?.prenomClient ? `${user.client.prenomClient} ${user.client.nomClient}` : "");
       setLoading(false);
     })();
-  }, [id]);
+  }, [id, user]);
 
   if (loading) {
     return (
@@ -183,6 +195,107 @@ export default function ProductDetailPage() {
               </span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Reviews Section */}
+      <div className="mt-12">
+        <h2 className="font-display text-2xl font-bold text-neutral-900 mb-1">
+          Avis clients
+        </h2>
+        <div className="flex items-center gap-3 mb-6">
+          <StarRating rating={reviewService.getAverage(reviews)} size={20} />
+          <span className="text-sm text-neutral-500">
+            {reviews.length > 0
+              ? `${reviewService.getAverage(reviews).toFixed(1)}/5 • ${reviews.length} avis`
+              : "Aucun avis pour le moment"}
+          </span>
+        </div>
+
+        {/* Review form */}
+        <div className="card p-6 mb-6">
+          <h3 className="font-semibold text-neutral-900 mb-4">Laisser un avis</h3>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!newComment.trim() || !reviewAuthor.trim()) return;
+              setSubmitting(true);
+              try {
+                const created = await reviewService.create({
+                  idProduit: produit.idProduit,
+                  idClient: user?.client?.idClient ?? null,
+                  nomAuteur: reviewAuthor,
+                  noteAvis: newRating,
+                  commentaireAvis: newComment,
+                });
+                setReviews((prev) => [...prev, created]);
+                setNewComment("");
+                setNewRating(5);
+                notify("Merci pour votre avis !");
+              } catch {
+                notify("Erreur lors de l'envoi de l'avis", "error");
+              } finally {
+                setSubmitting(false);
+              }
+            }}
+            className="space-y-4"
+          >
+            <div>
+              <label className="label">Votre nom</label>
+              <input
+                required
+                value={reviewAuthor}
+                onChange={(e) => setReviewAuthor(e.target.value)}
+                placeholder="Ex: Jean D."
+                className="input"
+              />
+            </div>
+            <div>
+              <label className="label">Votre note</label>
+              <StarRating rating={newRating} size={28} interactive onRate={setNewRating} />
+            </div>
+            <div>
+              <label className="label">Votre commentaire</label>
+              <textarea
+                required
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                rows={3}
+                placeholder="Partagez votre expérience avec ce produit..."
+                className="input resize-none"
+              />
+            </div>
+            <button type="submit" disabled={submitting} className="btn-primary">
+              {submitting ? "Envoi..." : "Publier mon avis"}
+            </button>
+          </form>
+        </div>
+
+        {/* Review list */}
+        <div className="space-y-3">
+          {reviews.length === 0 ? (
+            <p className="text-sm text-neutral-400 text-center py-8">
+              Soyez le premier à donner votre avis sur ce produit.
+            </p>
+          ) : (
+            reviews.map((r) => (
+              <div key={r.idAvis} className="card p-5">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-sm font-bold">
+                      {r.nomAuteur[0]?.toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-neutral-900">{r.nomAuteur}</p>
+                      <p className="text-xs text-neutral-400">{formatDate(r.dateAvis)}</p>
+                    </div>
+                  </div>
+                  <StarRating rating={r.noteAvis} size={14} />
+                </div>
+                <p className="text-sm text-neutral-600 leading-relaxed">{r.commentaireAvis}</p>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

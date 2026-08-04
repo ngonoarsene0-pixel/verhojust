@@ -12,7 +12,7 @@ import { formatPrice } from "../lib/format";
 import { BUSINESS } from "../lib/db";
 
 export default function CartPage() {
-  const { items, loading, refresh, updateQuantity, removeFromCart, totalAmount } = useCart();
+  const { items, loading, refresh, updateQuantity, removeFromCart, clearCart, totalAmount } = useCart();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -55,9 +55,17 @@ export default function CartPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="font-display text-3xl font-bold text-neutral-900 mb-8">
-        Mon Panier
-      </h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="font-display text-3xl font-bold text-neutral-900">
+          Mon Panier
+        </h1>
+        <button
+          onClick={() => clearCart()}
+          className="flex items-center gap-2 text-sm font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl transition-colors"
+        >
+          <Trash2 className="w-4 h-4" /> Vider le panier
+        </button>
+      </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Items */}
