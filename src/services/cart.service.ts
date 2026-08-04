@@ -11,14 +11,18 @@ import type { CartItem } from "../lib/types";
 
 export const cartService = {
   async getCart(idClient: number): Promise<CartItem[]> {
-    let { data: panier, error: panierError } = await supabase
+    // Récupérer le premier panier actif, ou en créer un s'il n'en existe pas
+    let { data: paniers, error: panierError } = await supabase
       .from("panier")
       .select("id_panier")
       .eq("id_client", idClient)
       .eq("statut_panier", "actif")
-      .maybeSingle();
+      .order("id_panier", { ascending: false })
+      .limit(1);
 
     if (panierError) throw panierError;
+
+    let panier = paniers && paniers.length > 0 ? paniers[0] : null;
 
     if (!panier) {
       const { data: newPanier, error: createError } = await supabase
@@ -64,14 +68,17 @@ export const cartService = {
     idProduit: number,
     quantite: number
   ): Promise<CartItem[]> {
-    let { data: panier, error: panierError } = await supabase
+    let { data: paniers, error: panierError } = await supabase
       .from("panier")
       .select("id_panier")
       .eq("id_client", idClient)
       .eq("statut_panier", "actif")
-      .maybeSingle();
+      .order("id_panier", { ascending: false })
+      .limit(1);
 
     if (panierError) throw panierError;
+
+    let panier = paniers && paniers.length > 0 ? paniers[0] : null;
 
     if (!panier) {
       const { data: newPanier, error: createError } = await supabase
@@ -121,13 +128,15 @@ export const cartService = {
     idProduit: number,
     quantite: number
   ): Promise<CartItem[]> {
-    const { data: panier } = await supabase
+    const { data: paniers } = await supabase
       .from("panier")
       .select("id_panier")
       .eq("id_client", idClient)
       .eq("statut_panier", "actif")
-      .maybeSingle();
+      .order("id_panier", { ascending: false })
+      .limit(1);
 
+    const panier = paniers && paniers.length > 0 ? paniers[0] : null;
     if (!panier) return [];
 
     if (quantite <= 0) {
@@ -146,13 +155,15 @@ export const cartService = {
   },
 
   async removeFromCart(idClient: number, idProduit: number): Promise<CartItem[]> {
-    const { data: panier } = await supabase
+    const { data: paniers } = await supabase
       .from("panier")
       .select("id_panier")
       .eq("id_client", idClient)
       .eq("statut_panier", "actif")
-      .maybeSingle();
+      .order("id_panier", { ascending: false })
+      .limit(1);
 
+    const panier = paniers && paniers.length > 0 ? paniers[0] : null;
     if (!panier) return [];
 
     const { error } = await supabase
@@ -167,13 +178,15 @@ export const cartService = {
   },
 
   async clearCart(idClient: number): Promise<void> {
-    const { data: panier } = await supabase
+    const { data: paniers } = await supabase
       .from("panier")
       .select("id_panier")
       .eq("id_client", idClient)
       .eq("statut_panier", "actif")
-      .maybeSingle();
+      .order("id_panier", { ascending: false })
+      .limit(1);
 
+    const panier = paniers && paniers.length > 0 ? paniers[0] : null;
     if (!panier) return;
 
     const { error } = await supabase

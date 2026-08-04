@@ -18,6 +18,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
 import { orderService } from "../services/order.service";
 import { deliveryService } from "../services/delivery.service";
+import { cinetPayService } from "../services/cinetpay.service";
 import { formatPrice } from "../lib/format";
 import { BUSINESS } from "../lib/db";
 import type { Commande } from "../lib/types";
@@ -73,9 +74,39 @@ export default function CheckoutPage() {
   const handlePlaceOrder = async () => {
     setProcessing(true);
     try {
-      // Si l'utilisateur est connecté, on utilise son idClient, sinon on passe 0 pour forcer la création d'un nouveau client dans Supabase
       const clientId = user?.client.idClient ?? 0;
       
+      // Si le client choisit Mobile Money ou Carte, on initialise le paiement CinetPay
+      if (modePaiement === "mobile_money" || modePaiement === "carte") {
+        const transactionId = "CMD_" + Date.now();
+        
+        const paymentResponse = await cinetPayService.initiatePayment({
+          transaction_id: transactionId,
+          amount: grandTotal,
+          currency: "XAF",
+          description: `Commande Verojust - ${items.length} article(s)`,
+          customer_name: guestNom,
+          customer_surname: guestPrenom,
+          customer_email: `${guestPrenom.toLowerCase()}.${guestNom.toLowerCase()}@client.local`,
+          customer_phone_number: telephone,
+          customer_address: adresse,
+          customer_city: ville,
+          customer_country: "CM",
+          return_url: window.location.href,
+          notify_url: "https://votre-site.com/api/notify",
+        });
+
+        if (paymentResponse && paymentResponse.code === "201" && paymentResponse.data?.payment_url) {
+          window.location.href = paymentResponse.data.payment_url;
+          return;
+        } else {
+          notify(paymentResponse.message || "Erreur lors de l'initialisation du paiement", "error");
+          setProcessing(false);
+          return;
+        }
+      }
+
+      // Si c'est "especes" (paiement à la livraison), on garde le fonctionnement normal
       const commande = await orderService.createOrder({
         idClient: clientId,
         adresseLivraisonCommande: `${adresse}, ${ville}`,

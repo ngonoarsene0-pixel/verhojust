@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import type { CartItem } from "../lib/types";
 import { cartService, GUEST_CLIENT_ID } from "../services/cart.service";
 import { useAuth } from "./AuthContext";
@@ -33,6 +33,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }
   }, [clientId]);
+
+  // Chargement automatique du panier au démarrage ou lors du changement de client
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   const addToCart = useCallback(
     async (idProduit: number, quantite = 1) => {
