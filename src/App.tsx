@@ -6,6 +6,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import WhatsAppButton from "./components/WhatsAppButton";
 import SupportChat from "./components/SupportChat";
+import ScrollToTop from "./components/ScrollToTop";
 import { ProtectedRoute, AdminRoute } from "./components/ProtectedRoute";
 import HomePage from "./pages/HomePage";
 import CatalogPage from "./pages/CatalogPage";
@@ -20,6 +21,7 @@ import AdminPage from "./pages/AdminPage";
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <ToastProvider>
         <AuthProvider>
           <CartProvider>

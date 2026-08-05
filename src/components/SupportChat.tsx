@@ -1,15 +1,38 @@
 import { useState, useRef, useEffect } from "react";
 import { Headphones, X, Send } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { GoogleGenAI } from "@google/genai";
 
 interface Message {
   id: number | string;
   message: string;
   sender: string;
+  session_id?: string;
   created_at?: string;
 }
 
 const PHONE = "237671461340";
+
+// Initialisation de l'IA Gemini avec ta clé sécurisée du fichier .env
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+
+// Fonction intelligente qui appelle l'IA en se faisant passer pour le support de VERHOJUST
+const getGeminiResponse = async (userMessage: string): Promise<string> => {
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: userMessage,
+      config: {
+        systemInstruction: "Tu es l'assistant du service client officiel de VERHOJUST, une entreprise spécialisée dans la vente d'épices et de piments à Yaoundé et Douala au Cameroun. Tu réponds de manière polie, chaleureuse, naturelle et professionnelle en français. Ne dis JAMAIS que tu es une intelligence artificielle ou un robot. Si on te demande des prix ou des commandes complexes, invite poliment le client à nous contacter sur WhatsApp au 237671461340. Tes réponses doivent être courtes et directes, comme un vrai conseiller sur un site web."
+      }
+    });
+    
+    return response.text || "Merci pour votre message ! Pour une réponse immédiate, n'hésitez pas à nous contacter sur WhatsApp.";
+  } catch (error) {
+    console.error("Erreur Gemini :", error);
+    return "Bonjour ! Pour une assistance rapide, vous pouvez nous écrire directement sur WhatsApp au " + PHONE + ".";
+  }
+};
 
 export default function SupportChat() {
   const [open, setOpen] = useState(false);
@@ -17,13 +40,26 @@ export default function SupportChat() {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Récupérer ou créer un identifiant de session unique pour ce client dans le navigateur
+  const [sessionId, setSessionId] = useState<string>("");
+
   useEffect(() => {
-    if (!open) return;
+    let storedSessionId = localStorage.getItem("verhojust_chat_session");
+    if (!storedSessionId) {
+      storedSessionId = "session_" + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+      localStorage.setItem("verhojust_chat_session", storedSessionId);
+    }
+    setSessionId(storedSessionId);
+  }, []);
+
+  useEffect(() => {
+    if (!open || !sessionId) return;
 
     const fetchMessages = async () => {
       const { data, error } = await supabase
         .from("messages")
         .select("*")
+        .eq("session_id", sessionId)
         .order("created_at", { ascending: true });
 
       if (!error && data) {
@@ -33,11 +69,17 @@ export default function SupportChat() {
 
     fetchMessages();
 
+    // Écouter les nouveaux messages en temps réel pour cette session spécifique
     const channel = supabase
-      .channel("public:messages")
+      .channel(`public:messages:session_id=eq.${sessionId}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages" },
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `session_id=eq.${sessionId}`,
+        },
         (payload: any) => {
           setMessages((prev) => {
             const exists = prev.some((m) => m.id === payload.new.id);
@@ -51,7 +93,7 @@ export default function SupportChat() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [open]);
+  }, [open, sessionId]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -59,23 +101,44 @@ export default function SupportChat() {
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || !sessionId) return;
 
     const textToSend = input;
     setInput("");
 
+    // 1. Enregistrer le message de l'utilisateur dans Supabase
     const { data, error } = await supabase
       .from("messages")
-      .insert([{ sender: "user", message: textToSend }])
+      .insert([{ sender: "user", message: textToSend, session_id: sessionId }])
       .select();
 
     if (error) {
       console.error("Erreur lors de l'envoi du message :", error.message);
-    } else if (data && data[0]) {
+      return;
+    } 
+    
+    if (data && data[0]) {
       setMessages((prev) => {
         const exists = prev.some((m) => m.id === data[0].id);
         if (exists) return prev;
         return [...prev, data[0] as Message];
+      });
+    }
+
+    // 2. Interroger Gemini pour obtenir la réponse intelligente
+    const botReplyText = await getGeminiResponse(textToSend);
+
+    // 3. Enregistrer la réponse de l'assistant dans Supabase
+    const { data: botData, error: botError } = await supabase
+      .from("messages")
+      .insert([{ sender: "assistant", message: botReplyText, session_id: sessionId }])
+      .select();
+
+    if (!botError && botData && botData[0]) {
+      setMessages((prev) => {
+        const exists = prev.some((m) => m.id === botData[0].id);
+        if (exists) return prev;
+        return [...prev, botData[0] as Message];
       });
     }
   };
