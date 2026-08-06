@@ -1,6 +1,7 @@
 const PHONE = "237671461340";
-const WHATSAPP_URL = `https://wa.me/${PHONE}?text=${encodeURIComponent(
-  "Bonjour VERHOJUST ÉPICERIE, j'aimerais passer une commande."
+const FACEBOOK_URL = "https://www.facebook.com/RodeMF";
+const WHATSAPP_URL = `https://api.whatsapp.com/send?phone=${PHONE}&text=${encodeURIComponent(
+  "Bonjour monsieur / madame, bienvenue chez Verhojust ! Nous sommes ravis de vous compter parmi nous. N'hésitez pas à découvrir toutes nos nouveautés sur notre page Facebook officielle : " + FACEBOOK_URL + ". Que puis-je faire pour vous aujourd'hui ?"
 )}`;
 
 export default function WhatsAppButton() {
