@@ -1,7 +1,9 @@
 import { BUSINESS } from "./db";
 
 export function formatPrice(amount: number): string {
-  return new Intl.NumberFormat("fr-FR").format(amount) + " " + BUSINESS.currency;
+  const fcfaFormatted = new Intl.NumberFormat("fr-FR").format(amount) + " " + BUSINESS.currency;
+  const usdAmount = (amount / 600).toFixed(2);
+  return `${fcfaFormatted} ($${usdAmount})`;
 }
 
 export function formatDate(dateStr: string): string {

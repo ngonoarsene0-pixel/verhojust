@@ -12,6 +12,7 @@ import {
   Smartphone,
   User,
   Phone,
+  MessageCircle,
 } from "lucide-react";
 import { useCart } from "../contexts/CartContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -106,7 +107,7 @@ export default function CheckoutPage() {
         }
       }
 
-      // Si c'est "especes" (paiement à la livraison), on garde le fonctionnement normal
+      // Si c'est "especes" (paiement à la livraison)
       const commande = await orderService.createOrder({
         idClient: clientId,
         adresseLivraisonCommande: `${adresse}, ${ville}`,
@@ -129,7 +130,7 @@ export default function CheckoutPage() {
       await clearCart();
       setCompletedOrder(commande);
       setStep(3);
-      notify("Commande passée avec succès!");
+      notify("Votre commande est en cours de traitement !");
     } catch {
       notify("Erreur lors de la création de la commande", "error");
     } finally {
@@ -138,6 +139,22 @@ export default function CheckoutPage() {
   };
 
   const fullName = `${guestPrenom} ${guestNom}`;
+
+  // Fonction pour envoyer l'alerte sur WhatsApp
+  const handleWhatsAppAlert = () => {
+    if (!completedOrder) return;
+    const adminPhone = "+237671461340"; // Ton numéro WhatsApp
+    const message = encodeURIComponent(
+      `🔔 ALERTE COMMANDE\n\n` +
+      `Statut : Votre commande est en cours de traitement\n` +
+      `Référence : ${completedOrder.referenceCommande}\n` +
+      `Client : ${fullName} (${telephone})\n` +
+      `Adresse : ${adresse}, ${ville}\n` +
+      `Montant Total : ${formatPrice(grandTotal)}\n` +
+      `Paiement : ${modePaiement === "mobile_money" ? "Mobile Money" : modePaiement === "especes" ? "Espèces à la livraison" : "Carte bancaire"}`
+    );
+    window.open(`https://wa.me/${adminPhone}?text=${message}`, "_blank");
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -427,12 +444,24 @@ export default function CheckoutPage() {
           <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6">
             <Check className="w-10 h-10 text-emerald-600" />
           </div>
-          <h2 className="font-display text-3xl font-bold text-neutral-900 mb-3">
-            Commande confirmée!
+          <h2 className="font-display text-3xl font-bold text-neutral-900 mb-2">
+            Votre commande est en cours de traitement !
           </h2>
-          <p className="text-neutral-500 mb-2">
-            Merci pour votre achat, {fullName}. Votre commande a été enregistrée avec succès.
+          <p className="text-neutral-500 mb-6">
+            Merci pour votre achat, {fullName}. Nous préparons votre commande avec soin.
           </p>
+
+          {/* Bouton d'alerte WhatsApp */}
+          <div className="mb-6">
+            <button
+              onClick={handleWhatsAppAlert}
+              className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 rounded-xl shadow-md transition-colors"
+            >
+              <MessageCircle className="w-5 h-5" />
+              Informer le vendeur sur WhatsApp
+            </button>
+          </div>
+
           <div className="card p-6 my-6 text-left">
             <div className="flex justify-between items-center mb-4">
               <div>

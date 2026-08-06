@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Package,
   LayoutDashboard,
@@ -14,16 +14,34 @@ import {
   DollarSign,
   Users,
   MapPin,
+  MessageSquare,
+  Send,
 } from "lucide-react";
 import { productService } from "../services/product.service";
 import { orderService } from "../services/order.service";
 import { deliveryService } from "../services/delivery.service";
 import { authService } from "../services/auth.service";
+import { supabase } from "../lib/supabase";
 import type { ProduitWithType, TypeProduit, CommandeWithDetails, Livraison, Produit, Client } from "../lib/types";
 import { formatPrice, formatDate, formatDateTime } from "../lib/format";
 import { useToast } from "../contexts/ToastContext";
 
-type Tab = "dashboard" | "products" | "orders" | "deliveries" | "clients";
+type Tab = "dashboard" | "products" | "orders" | "deliveries" | "clients" | "messages";
+
+interface Message {
+  id: number | string;
+  message: string;
+  sender: string;
+  session_id?: string;
+  created_at?: string;
+}
+
+interface Conversation {
+  session_id: string;
+  lastMessage: string;
+  lastTime: string;
+  unreadCount?: number;
+}
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>("dashboard");
@@ -36,6 +54,13 @@ export default function AdminPage() {
   const [livraisons, setLivraisons] = useState<(Livraison & { reference?: string })[]>([]);
   const [clientsList, setClientsList] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Messaging state (Admin chat)
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<Message[]>([]);
+  const [replyInput, setReplyInput] = useState("");
+  const chatScrollRef = useRef<HTMLDivElement>(null);
 
   // Product form modal
   const [showForm, setShowForm] = useState(false);
@@ -57,9 +82,103 @@ export default function AdminPage() {
     setLoading(false);
   };
 
+  // Charger les conversations de support
+  const fetchConversations = async () => {
+    const { data, error } = await supabase
+      .from("messages")
+      .select("session_id, message, created_at, sender")
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      const convMap = new Map<string, Conversation>();
+      data.forEach((m: any) => {
+        if (m.session_id && !convMap.has(m.session_id)) {
+          convMap.set(m.session_id, {
+            session_id: m.session_id,
+            lastMessage: `${m.sender === "admin" ? "Vous: " : ""}${m.message}`,
+            lastTime: m.created_at,
+          });
+        }
+      });
+      setConversations(Array.from(convMap.values()));
+    }
+  };
+
   useEffect(() => {
     refreshAll();
+    fetchConversations();
   }, []);
+
+  // Écouter les messages de la conversation sélectionnée en admin
+  useEffect(() => {
+    if (!selectedSession) return;
+
+    const fetchSessionMessages = async () => {
+      const { data, error } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("session_id", selectedSession)
+        .order("created_at", { ascending: true });
+
+      if (!error && data) {
+        setChatMessages(data);
+      }
+    };
+
+    fetchSessionMessages();
+
+    const channel = supabase
+      .channel(`admin:messages:${selectedSession}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `session_id=eq.${selectedSession}`,
+        },
+        (payload: any) => {
+          setChatMessages((prev) => {
+            const exists = prev.some((m) => m.id === payload.new.id);
+            if (exists) return prev;
+            return [...prev, payload.new as Message];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedSession]);
+
+  useEffect(() => {
+    chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [chatMessages]);
+
+  const handleSendAdminReply = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!replyInput.trim() || !selectedSession) return;
+
+    const text = replyInput;
+    setReplyInput("");
+
+    const { data, error } = await supabase
+      .from("messages")
+      .insert([{ sender: "admin", message: text, session_id: selectedSession }])
+      .select();
+
+    if (!error && data && data[0]) {
+      setChatMessages((prev) => {
+        const exists = prev.some((m) => m.id === data[0].id);
+        if (exists) return prev;
+        return [...prev, data[0] as Message];
+      });
+      fetchConversations();
+    } else {
+      notify("Erreur lors de l'envoi", "error");
+    }
+  };
 
   const lowStock = products.filter((p) => p.quantiteStockProduit <= p.seuilAlertProduit);
   const totalRevenue = orders.reduce((s, o) => s + o.montantTotalCommande, 0);
@@ -128,6 +247,7 @@ export default function AdminPage() {
     { id: "orders", label: "Commandes", icon: ShoppingCart },
     { id: "deliveries", label: "Livraisons", icon: Truck },
     { id: "clients", label: "Clients", icon: Users },
+    { id: "messages", label: "Messages Support", icon: MessageSquare },
   ];
 
   if (loading) {
@@ -157,7 +277,10 @@ export default function AdminPage() {
         {tabs.map((t) => (
           <button
             key={t.id}
-            onClick={() => setTab(t.id)}
+            onClick={() => {
+              setTab(t.id);
+              if (t.id === "messages") fetchConversations();
+            }}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${
               tab === t.id
                 ? "bg-primary-600 text-white shadow-md"
@@ -571,6 +694,98 @@ export default function AdminPage() {
         </div>
       )}
 
+      {/* MESSAGES SUPPORT TAB */}
+      {tab === "messages" && (
+        <div className="animate-fade-in grid grid-cols-1 md:grid-cols-3 gap-4" style={{ height: "38rem" }}>
+          {/* Liste des conversations */}
+          <div className="card overflow-hidden flex flex-col md:col-span-1">
+            <div className="p-4 border-b border-neutral-200 bg-neutral-50">
+              <h3 className="font-semibold text-sm text-neutral-900">Conversations Clients</h3>
+              <p className="text-xs text-neutral-500">{conversations.length} discussion(s)</p>
+            </div>
+            <div className="flex-1 overflow-y-auto divide-y divide-neutral-100">
+              {conversations.length === 0 ? (
+                <p className="text-xs text-neutral-400 text-center py-10">Aucun message pour le moment</p>
+              ) : (
+                conversations.map((conv) => (
+                  <div
+                    key={conv.session_id}
+                    onClick={() => setSelectedSession(conv.session_id)}
+                    className={`p-3.5 cursor-pointer transition-colors hover:bg-neutral-50 ${
+                      selectedSession === conv.session_id ? "bg-primary-50/60 border-l-4 border-primary-600" : ""
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold text-neutral-800 truncate">
+                        Client #{conv.session_id.substring(0, 8)}
+                      </span>
+                      <span className="text-[10px] text-neutral-400">
+                        {formatDateTime(conv.lastTime)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-neutral-600 truncate">{conv.lastMessage}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Espace de discussion de la conversation sélectionnée */}
+          <div className="card overflow-hidden flex flex-col md:col-span-2">
+            {selectedSession ? (
+              <>
+                <div className="p-4 border-b border-neutral-200 bg-neutral-50 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-sm text-neutral-900">
+                      Discussion avec Client #{selectedSession.substring(0, 8)}
+                    </h3>
+                    <p className="text-xs text-neutral-500">Session ID: {selectedSession}</p>
+                  </div>
+                </div>
+
+                <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-neutral-50/50">
+                  {chatMessages.map((m) => (
+                    <div key={m.id} className={`flex ${m.sender === "admin" ? "justify-end" : "justify-start"}`}>
+                      <div
+                        className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-line shadow-sm ${
+                          m.sender === "admin"
+                            ? "bg-primary-600 text-white rounded-br-sm"
+                            : "bg-white border border-neutral-200 text-neutral-800 rounded-bl-sm"
+                        }`}
+                      >
+                        <p className="text-[10px] opacity-70 mb-0.5 font-semibold">
+                          {m.sender === "admin" ? "Vous (Admin)" : "Client"}
+                        </p>
+                        {m.message}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <form onSubmit={handleSendAdminReply} className="p-3 border-t border-neutral-200 bg-white flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={replyInput}
+                    onChange={(e) => setReplyInput(e.target.value)}
+                    placeholder="Écrivez votre réponse au client..."
+                    className="flex-1 text-sm rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 focus:outline-none focus:border-primary-400"
+                  />
+                  <button type="submit" className="btn-primary !px-4 !py-2.5 flex items-center gap-1.5">
+                    <Send className="w-4 h-4" />
+                    <span>Envoyer</span>
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-neutral-400">
+                <MessageSquare className="w-12 h-12 text-neutral-300 mb-2" />
+                <p className="text-sm font-medium">Sélectionnez une conversation à gauche pour répondre au client en direct.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Product form modal */}
       {showForm && (
         <ProductFormModal
@@ -588,7 +803,7 @@ export default function AdminPage() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  PRODUCT FORM MODAL                                                 */
+/* PRODUCT FORM MODAL                                                 */
 /* ------------------------------------------------------------------ */
 function ProductFormModal({
   product,
