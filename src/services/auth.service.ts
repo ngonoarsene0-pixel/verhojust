@@ -1,9 +1,6 @@
 /**
  * ============================================================================
- *  Auth Service — handles COMPTE & CLIENT tables (Supabase)
- * ============================================================================
- *  Custom auth model: login/signup against the COMPTE table, session stored
- *  in localStorage. Admin check based on role_compte column.
+ * Auth Service — handles COMPTE & CLIENT tables (Supabase)
  * ============================================================================
  */
 import { supabase } from "../lib/supabase";
@@ -18,6 +15,7 @@ interface CompteRow {
   mot_de_passe_compte: string;
   role_compte: "admin" | "client";
   date_creation_compte: string;
+  reset_code?: string;
 }
 
 interface ClientRow {
@@ -157,4 +155,49 @@ export const authService = {
     if (error) throw new Error(error.message);
     return (data as ClientRow[]).map(mapClient);
   },
+
+  async requestPasswordReset(email: string): Promise<string> {
+    const { data: compte, error } = await supabase
+      .from("compte")
+      .select("id_compte")
+      .eq("login_compte", email)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    if (!compte) throw new Error("Aucun compte associé à cet e-mail");
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    const { error: updateError } = await supabase
+      .from("compte")
+      .update({ reset_code: code })
+      .eq("login_compte", email);
+
+    if (updateError) throw new Error(updateError.message);
+
+    return code;
+  },
+
+  async verifyAndResetPassword(email: string, code: string, nouveauMotDePasse: string): Promise<void> {
+    const { data: compte, error } = await supabase
+      .from("compte")
+      .select("reset_code")
+      .eq("login_compte", email)
+      .maybeSingle();
+
+    if (error || !compte) throw new Error("Erreur lors de la vérification");
+    if (!compte.reset_code || compte.reset_code !== code) {
+      throw new Error("Code de vérification incorrect");
+    }
+
+    const { error: updateError } = await supabase
+      .from("compte")
+      .update({ 
+        mot_de_passe_compte: nouveauMotDePasse,
+        reset_code: null 
+      })
+      .eq("login_compte", email);
+
+    if (updateError) throw new Error(updateError.message);
+  }
 };
