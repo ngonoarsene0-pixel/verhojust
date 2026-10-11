@@ -5,7 +5,11 @@ import { productService } from "../services/product.service";
 import type { ProduitWithType, TypeProduit } from "../lib/types";
 import ProductCard from "../components/ProductCard";
 
-export default function CatalogPage() {
+interface CatalogPageProps {
+  currentLang?: "FR" | "EN";
+}
+
+export default function CatalogPage({ currentLang = "FR" }: CatalogPageProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryParam = searchParams.get("q") ?? "";
   const typeParam = searchParams.get("type") ?? "";
@@ -79,10 +83,14 @@ export default function CatalogPage() {
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="font-display text-3xl font-bold text-neutral-900 mb-2">
-          Catalogue des produits
+          {currentLang === "FR" ? "Catalogue des produits" : "Product Catalog"}
         </h1>
         <p className="text-neutral-500">
-          {loading ? "Chargement..." : `${filtered.length} produit(s) trouvé(s)`}
+          {loading
+            ? currentLang === "FR" ? "Chargement..." : "Loading..."
+            : currentLang === "FR"
+            ? `${filtered.length} produit(s) trouvé(s)`
+            : `${filtered.length} product(s) found`}
         </p>
       </div>
 
@@ -97,7 +105,9 @@ export default function CatalogPage() {
               setSearch(e.target.value);
               updateSearch(e.target.value);
             }}
-            placeholder="Rechercher un produit..."
+            placeholder={
+              currentLang === "FR" ? "Rechercher un produit..." : "Search for a product..."
+            }
             className="input pl-10"
           />
         </div>
@@ -106,15 +116,15 @@ export default function CatalogPage() {
           onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
           className="input sm:w-48"
         >
-          <option value="nom">Trier par nom</option>
-          <option value="prix_asc">Prix croissant</option>
-          <option value="prix_desc">Prix décroissant</option>
+          <option value="nom">{currentLang === "FR" ? "Trier par nom" : "Sort by name"}</option>
+          <option value="prix_asc">{currentLang === "FR" ? "Prix croissant" : "Price: Low to High"}</option>
+          <option value="prix_desc">{currentLang === "FR" ? "Prix décroissant" : "Price: High to Low"}</option>
         </select>
         <button
           onClick={() => setShowFilters(!showFilters)}
           className="btn-secondary sm:hidden"
         >
-          <SlidersHorizontal className="w-4 h-4" /> Filtres
+          <SlidersHorizontal className="w-4 h-4" /> {currentLang === "FR" ? "Filtres" : "Filters"}
         </button>
       </div>
 
@@ -123,13 +133,15 @@ export default function CatalogPage() {
         <aside className={`${showFilters ? "block" : "hidden"} lg:block w-full lg:w-64 shrink-0`}>
           <div className="card p-5 sticky top-24">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-sm text-neutral-900">Catégories</h3>
+              <h3 className="font-semibold text-sm text-neutral-900">
+                {currentLang === "FR" ? "Catégories" : "Categories"}
+              </h3>
               {selectedType && (
                 <button
                   onClick={() => updateType("")}
                   className="text-xs text-primary-600 hover:underline"
                 >
-                  Réinitialiser
+                  {currentLang === "FR" ? "Réinitialiser" : "Reset"}
                 </button>
               )}
             </div>
@@ -142,7 +154,7 @@ export default function CatalogPage() {
                     : "text-neutral-600 hover:bg-neutral-50"
                 }`}
               >
-                Tous les produits
+                {currentLang === "FR" ? "Tous les produits" : "All products"}
               </button>
               {types.map((t) => (
                 <button
@@ -179,9 +191,13 @@ export default function CatalogPage() {
           ) : filtered.length === 0 ? (
             <div className="card p-12 text-center">
               <X className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
-              <p className="text-neutral-500 mb-2">Aucun produit trouvé</p>
+              <p className="text-neutral-500 mb-2">
+                {currentLang === "FR" ? "Aucun produit trouvé" : "No products found"}
+              </p>
               <p className="text-sm text-neutral-400">
-                Essayez d'autres mots-clés ou catégories
+                {currentLang === "FR"
+                  ? "Essayez d'autres mots-clés ou catégories"
+                  : "Try other keywords or categories"}
               </p>
             </div>
           ) : (

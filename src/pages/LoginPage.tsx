@@ -5,7 +5,11 @@ import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
 import { authService } from "../services/auth.service";
 
-export default function LoginPage() {
+interface LoginPageProps {
+  currentLang?: "FR" | "EN";
+}
+
+export default function LoginPage({ currentLang = "FR" }: LoginPageProps) {
   const { login, loading } = useAuth();
   const { notify } = useToast();
   const navigate = useNavigate();
@@ -30,7 +34,11 @@ export default function LoginPage() {
       if (step === "login") {
         // Connexion classique
         const u = await login(email, password);
-        notify(`Bienvenue, ${u.client.prenomClient}!`);
+        notify(
+          currentLang === "FR"
+            ? `Bienvenue, ${u.client.prenomClient}!`
+            : `Welcome, ${u.client.prenomClient}!`
+        );
         navigate(from, { replace: true });
       } 
       else if (step === "ask_email") {
@@ -39,14 +47,21 @@ export default function LoginPage() {
         const generatedCode = await authService.requestPasswordReset(email);
         setActionLoading(false);
         
-        // Pour vous faciliter les tests immédiatement, on affiche un petit message de notification avec le code
-        notify(`Code de sécurité généré ! (Test : ${generatedCode})`);
+        notify(
+          currentLang === "FR"
+            ? `Code de sécurité généré ! (Test : ${generatedCode})`
+            : `Security code generated! (Test: ${generatedCode})`
+        );
         setStep("verify_code");
       } 
       else if (step === "verify_code") {
         // Étape 2 : Juste valider que le code entré correspond
         if (!code) {
-          setError("Veuillez entrer le code de sécurité");
+          setError(
+            currentLang === "FR"
+              ? "Veuillez entrer le code de sécurité"
+              : "Please enter the security code"
+          );
           return;
         }
         setStep("new_password");
@@ -57,7 +72,11 @@ export default function LoginPage() {
         await authService.verifyAndResetPassword(email, code, newPassword);
         setActionLoading(false);
 
-        notify("Mot de passe modifié avec succès ! Vous pouvez vous connecter.");
+        notify(
+          currentLang === "FR"
+            ? "Mot de passe modifié avec succès ! Vous pouvez vous connecter."
+            : "Password changed successfully! You can now log in."
+        );
         setStep("login");
         setPassword("");
         setNewPassword("");
@@ -65,7 +84,13 @@ export default function LoginPage() {
       }
     } catch (err) {
       setActionLoading(false);
-      setError(err instanceof Error ? err.message : "Une erreur est survenue");
+      setError(
+        err instanceof Error
+          ? err.message
+          : currentLang === "FR"
+          ? "Une erreur est survenue"
+          : "An error occurred"
+      );
     }
   };
 
@@ -79,16 +104,28 @@ export default function LoginPage() {
             </div>
           </Link>
           <h1 className="font-display text-2xl font-bold text-neutral-900">
-            {step === "login" && "Connexion"}
-            {step === "ask_email" && "Mot de passe oublié"}
-            {step === "verify_code" && "Vérification du code"}
-            {step === "new_password" && "Nouveau mot de passe"}
+            {step === "login" && (currentLang === "FR" ? "Connexion" : "Log In")}
+            {step === "ask_email" && (currentLang === "FR" ? "Mot de passe oublié" : "Forgot Password")}
+            {step === "verify_code" && (currentLang === "FR" ? "Vérification du code" : "Code Verification")}
+            {step === "new_password" && (currentLang === "FR" ? "Nouveau mot de passe" : "New Password")}
           </h1>
           <p className="text-neutral-500 text-sm mt-1">
-            {step === "login" && "Connectez-vous à votre compte VERHOJUST"}
-            {step === "ask_email" && "Entrez votre e-mail pour recevoir votre code de sécurité"}
-            {step === "verify_code" && `Entrez le code à 6 chiffres envoyé à ${email}`}
-            {step === "new_password" && "Choisissez votre nouveau mot de passe sécurisé"}
+            {step === "login" &&
+              (currentLang === "FR"
+                ? "Connectez-vous à votre compte VERHOJUST"
+                : "Log in to your VERHOJUST account")}
+            {step === "ask_email" &&
+              (currentLang === "FR"
+                ? "Entrez votre e-mail pour recevoir votre code de sécurité"
+                : "Enter your email to receive your security code")}
+            {step === "verify_code" &&
+              (currentLang === "FR"
+                ? `Entrez le code à 6 chiffres envoyé à ${email}`
+                : `Enter the 6-digit code sent to ${email}`)}
+            {step === "new_password" &&
+              (currentLang === "FR"
+                ? "Choisissez votre nouveau mot de passe sécurisé"
+                : "Choose your new secure password")}
           </p>
         </div>
 
@@ -104,7 +141,9 @@ export default function LoginPage() {
             {/* Champ E-mail (utilisé au login et à l'étape ask_email) */}
             {(step === "login" || step === "ask_email") && (
               <div>
-                <label className="label">Email</label>
+                <label className="label">
+                  {currentLang === "FR" ? "Email" : "Email"}
+                </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                   <input
@@ -112,7 +151,7 @@ export default function LoginPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="votre@email.com"
+                    placeholder={currentLang === "FR" ? "votre@email.com" : "your@email.com"}
                     className="input pl-10"
                     disabled={step === "ask_email" && actionLoading}
                   />
@@ -124,7 +163,9 @@ export default function LoginPage() {
             {step === "login" && (
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="label mb-0">Mot de passe</label>
+                  <label className="label mb-0">
+                    {currentLang === "FR" ? "Mot de passe" : "Password"}
+                  </label>
                   <button
                     type="button"
                     onClick={() => {
@@ -133,7 +174,7 @@ export default function LoginPage() {
                     }}
                     className="text-xs text-primary-600 hover:text-primary-700 font-medium"
                   >
-                    Mot de passe oublié ?
+                    {currentLang === "FR" ? "Mot de passe oublié ?" : "Forgot password?"}
                   </button>
                 </div>
                 <div className="relative">
@@ -153,7 +194,11 @@ export default function LoginPage() {
             {/* Champ Code de sécurité (étape verify_code) */}
             {step === "verify_code" && (
               <div>
-                <label className="label">Code de sécurité à 6 chiffres</label>
+                <label className="label">
+                  {currentLang === "FR"
+                    ? "Code de sécurité à 6 chiffres"
+                    : "6-digit security code"}
+                </label>
                 <div className="relative">
                   <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                   <input
@@ -172,7 +217,9 @@ export default function LoginPage() {
             {/* Champ Nouveau mot de passe (étape new_password) */}
             {step === "new_password" && (
               <div>
-                <label className="label">Nouveau mot de passe</label>
+                <label className="label">
+                  {currentLang === "FR" ? "Nouveau mot de passe" : "New password"}
+                </label>
                 <div className="relative">
                   <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                   <input
@@ -192,10 +239,30 @@ export default function LoginPage() {
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
-                  {step === "login" && <>Se connecter <ArrowRight className="w-4 h-4" /></>}
-                  {step === "ask_email" && <>Envoyer le code <ArrowRight className="w-4 h-4" /></>}
-                  {step === "verify_code" && <>Vérifier le code <ArrowRight className="w-4 h-4" /></>}
-                  {step === "new_password" && <>Enregistrer le mot de passe <ArrowRight className="w-4 h-4" /></>}
+                  {step === "login" && (
+                    <>
+                      {currentLang === "FR" ? "Se connecter" : "Log In"}{" "}
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                  {step === "ask_email" && (
+                    <>
+                      {currentLang === "FR" ? "Envoyer le code" : "Send Code"}{" "}
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                  {step === "verify_code" && (
+                    <>
+                      {currentLang === "FR" ? "Vérifier le code" : "Verify Code"}{" "}
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                  {step === "new_password" && (
+                    <>
+                      {currentLang === "FR" ? "Enregistrer le mot de passe" : "Save Password"}{" "}
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
                 </>
               )}
             </button>
@@ -210,7 +277,8 @@ export default function LoginPage() {
                 }}
                 className="w-full text-center text-sm text-neutral-500 hover:text-neutral-700 mt-2 flex items-center justify-center gap-1.5"
               >
-                <ArrowLeft className="w-3.5 h-3.5" /> Retour à la connexion
+                <ArrowLeft className="w-3.5 h-3.5" />{" "}
+                {currentLang === "FR" ? "Retour à la connexion" : "Back to login"}
               </button>
             )}
           </form>
@@ -218,7 +286,9 @@ export default function LoginPage() {
           {step === "login" && (
             <div className="mt-6 pt-6 border-t border-neutral-100">
               <p className="text-xs text-neutral-400 text-center">
-                Vos identifiants vous ont été envoyés lors de votre inscription.
+                {currentLang === "FR"
+                  ? "Vos identifiants vous ont été envoyés lors de votre inscription."
+                  : "Your credentials were sent to you during registration."}
               </p>
             </div>
           )}
@@ -226,9 +296,9 @@ export default function LoginPage() {
 
         {step === "login" && (
           <p className="text-center text-sm text-neutral-500 mt-6">
-            Pas encore de compte?{" "}
+            {currentLang === "FR" ? "Pas encore de compte?" : "Don't have an account yet?"}{" "}
             <Link to="/signup" className="text-primary-600 font-semibold hover:text-primary-700">
-              Créer un compte
+              {currentLang === "FR" ? "Créer un compte" : "Create an account"}
             </Link>
           </p>
         )}

@@ -10,11 +10,17 @@ import {
   LayoutDashboard,
   Package,
   Facebook,
+  Globe,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
 
-export default function Navbar() {
+interface NavbarProps {
+  currentLang?: "FR" | "EN";
+  onToggleLanguage?: () => void;
+}
+
+export default function Navbar({ currentLang = "FR", onToggleLanguage }: NavbarProps) {
   const { user, logout, isAdmin } = useAuth();
   const { totalItems } = useCart();
   const navigate = useNavigate();
@@ -40,7 +46,9 @@ export default function Navbar() {
       {/* Top bar */}
       <div className="bg-primary-700 text-white text-xs">
         <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
-          <span className="hidden sm:inline">Livraison à Yaoundé et Douala</span>
+          <span className="hidden sm:inline">
+            {currentLang === "FR" ? "Livraison à Yaoundé et Douala" : "Delivery to Yaounde and Douala"}
+          </span>
           
           {/* Réseaux sociaux avec vraies couleurs sur pastilles blanches */}
           <div className="flex items-center gap-3 ml-auto">
@@ -91,7 +99,7 @@ export default function Navbar() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Rechercher un produit..."
+                placeholder={currentLang === "FR" ? "Rechercher un produit..." : "Search for a product..."}
                 className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-neutral-200 bg-neutral-50 focus:bg-white focus:border-primary-400 focus:ring-2 focus:ring-primary-100 focus:outline-none transition-all"
               />
             </div>
@@ -100,25 +108,36 @@ export default function Navbar() {
           {/* Nav links */}
           <nav className="hidden lg:flex items-center gap-6">
             <NavLink to="/" className={navLinkClass} end>
-              Accueil
+              {currentLang === "FR" ? "Accueil" : "Home"}
             </NavLink>
             <NavLink to="/catalogue" className={navLinkClass}>
-              Catalogue
+              {currentLang === "FR" ? "Catalogue" : "Catalog"}
             </NavLink>
             {user && (
               <NavLink to="/compte" className={navLinkClass}>
-                Mes Commandes
+                {currentLang === "FR" ? "Mes Commandes" : "My Orders"}
               </NavLink>
             )}
             {isAdmin && (
               <NavLink to="/admin" className={navLinkClass}>
-                Administration
+                {currentLang === "FR" ? "Administration" : "Admin"}
               </NavLink>
             )}
           </nav>
 
           {/* Actions */}
           <div className="flex items-center gap-2">
+            {/* Bouton de Langue (style demandé) */}
+            <button
+              type="button"
+              onClick={onToggleLanguage}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-semibold transition-colors"
+              title={currentLang === "FR" ? "Changer de langue" : "Switch language"}
+            >
+              <Globe className="w-4 h-4 text-primary-700" />
+              <span>{currentLang}</span>
+            </button>
+
             {/* Cart */}
             <Link
               to="/panier"
@@ -161,7 +180,7 @@ export default function Navbar() {
                         onClick={() => setUserMenuOpen(false)}
                         className="flex items-center gap-2.5 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
                       >
-                        <Package className="w-4 h-4" /> Mes Commandes
+                        <Package className="w-4 h-4" /> {currentLang === "FR" ? "Mes Commandes" : "My Orders"}
                       </Link>
                       {isAdmin && (
                         <Link
@@ -169,7 +188,7 @@ export default function Navbar() {
                           onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-2.5 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
                         >
-                          <LayoutDashboard className="w-4 h-4" /> Administration
+                          <LayoutDashboard className="w-4 h-4" /> {currentLang === "FR" ? "Administration" : "Admin"}
                         </Link>
                       )}
                       <button
@@ -180,7 +199,7 @@ export default function Navbar() {
                         }}
                         className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                       >
-                        <LogOut className="w-4 h-4" /> Déconnexion
+                        <LogOut className="w-4 h-4" /> {currentLang === "FR" ? "Déconnexion" : "Logout"}
                       </button>
                     </div>
                   </>
@@ -188,7 +207,7 @@ export default function Navbar() {
               </div>
             ) : (
               <Link to="/login" className="btn-primary !py-2 !px-4 hidden sm:inline-flex">
-                <User className="w-4 h-4" /> Connexion
+                <User className="w-4 h-4" /> {currentLang === "FR" ? "Connexion" : "Login"}
               </Link>
             )}
 
@@ -214,30 +233,30 @@ export default function Navbar() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Rechercher..."
+                  placeholder={currentLang === "FR" ? "Rechercher..." : "Search..."}
                   className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-neutral-200 bg-neutral-50 focus:outline-none"
                 />
               </div>
             </form>
             <NavLink to="/" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium text-neutral-700">
-              Accueil
+              {currentLang === "FR" ? "Accueil" : "Home"}
             </NavLink>
             <NavLink to="/catalogue" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium text-neutral-700">
-              Catalogue
+              {currentLang === "FR" ? "Catalogue" : "Catalog"}
             </NavLink>
             {user && (
               <NavLink to="/compte" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium text-neutral-700">
-                Mes Commandes
+                {currentLang === "FR" ? "Mes Commandes" : "My Orders"}
               </NavLink>
             )}
             {isAdmin && (
               <NavLink to="/admin" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium text-neutral-700">
-                Administration
+                {currentLang === "FR" ? "Administration" : "Admin"}
               </NavLink>
             )}
             {!user && (
               <Link to="/login" onClick={() => setMobileOpen(false)} className="btn-primary w-full">
-                Connexion
+                {currentLang === "FR" ? "Connexion" : "Login"}
               </Link>
             )}
           </div>

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider, Helmet } from "react-helmet-async";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -20,6 +21,12 @@ import AccountPage from "./pages/AccountPage";
 import AdminPage from "./pages/AdminPage";
 
 function App() {
+  const [lang, setLang] = useState<"FR" | "EN">("FR");
+
+  const toggleLanguage = () => {
+    setLang((prev) => (prev === "FR" ? "EN" : "FR"));
+  };
+
   // Données structurées Schema.org pour indiquer à Google que c'est une épicerie
   const structuredData = {
     "@context": "https://schema.org",
@@ -46,21 +53,21 @@ function App() {
           <AuthProvider>
             <CartProvider>
               <div className="min-h-screen flex flex-col">
-                <Navbar />
+                <Navbar currentLang={lang} onToggleLanguage={toggleLanguage} />
                 <main className="flex-1">
                   <Routes>
-                    <Route path="/" element={<HomePage />} />
-                    <Route path="/catalogue" element={<CatalogPage />} />
-                    <Route path="/produit/:id" element={<ProductDetailPage />} />
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/signup" element={<SignupPage />} />
-                    <Route path="/panier" element={<CartPage />} />
-                    <Route path="/checkout" element={<CheckoutPage />} />
+                    <Route path="/" element={<HomePage currentLang={lang} />} />
+                    <Route path="/catalogue" element={<CatalogPage currentLang={lang} />} />
+                    <Route path="/produit/:id" element={<ProductDetailPage currentLang={lang} />} />
+                    <Route path="/login" element={<LoginPage currentLang={lang} />} />
+                    <Route path="/signup" element={<SignupPage currentLang={lang} />} />
+                    <Route path="/panier" element={<CartPage currentLang={lang} />} />
+                    <Route path="/checkout" element={<CheckoutPage currentLang={lang} />} />
                     <Route
                       path="/compte"
                       element={
                         <ProtectedRoute>
-                          <AccountPage />
+                          <AccountPage currentLang={lang} />
                         </ProtectedRoute>
                       }
                     />
@@ -68,7 +75,7 @@ function App() {
                       path="/admin"
                       element={
                         <AdminRoute>
-                          <AdminPage />
+                          <AdminPage currentLang={lang} />
                         </AdminRoute>
                       }
                     />
@@ -76,7 +83,7 @@ function App() {
                 </main>
                 <WhatsAppButton />
                 <SupportChat />
-                <Footer />
+                <Footer currentLang={lang} />
               </div>
             </CartProvider>
           </AuthProvider>

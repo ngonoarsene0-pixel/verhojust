@@ -43,7 +43,11 @@ interface Conversation {
   unreadCount?: number;
 }
 
-export default function AdminPage() {
+interface AdminPageProps {
+  currentLang?: "FR" | "EN";
+}
+
+export default function AdminPage({ currentLang = "FR" }: AdminPageProps) {
   const [tab, setTab] = useState<Tab>("dashboard");
   const { notify } = useToast();
 
@@ -95,7 +99,7 @@ export default function AdminPage() {
         if (m.session_id && !convMap.has(m.session_id)) {
           convMap.set(m.session_id, {
             session_id: m.session_id,
-            lastMessage: `${m.sender === "admin" ? "Vous: " : ""}${m.message}`,
+            lastMessage: `${m.sender === "admin" ? (currentLang === "FR" ? "Vous : " : "You: ") : ""}${m.message}`,
             lastTime: m.created_at,
           });
         }
@@ -176,7 +180,7 @@ export default function AdminPage() {
       });
       fetchConversations();
     } else {
-      notify("Erreur lors de l'envoi", "error");
+      notify(currentLang === "FR" ? "Erreur lors de l'envoi" : "Error sending message", "error");
     }
   };
 
@@ -190,47 +194,47 @@ export default function AdminPage() {
     try {
       if (editingProduct) {
         await productService.updateProduct(editingProduct.idProduit, data);
-        notify("Produit mis à jour");
+        notify(currentLang === "FR" ? "Produit mis à jour" : "Product updated");
       } else {
         await productService.createProduct(data as Omit<Produit, "idProduit" | "dateAjoutProduit">);
-        notify("Produit créé");
+        notify(currentLang === "FR" ? "Produit créé" : "Product created");
       }
       setShowForm(false);
       setEditingProduct(null);
       refreshAll();
     } catch {
-      notify("Erreur lors de la sauvegarde", "error");
+      notify(currentLang === "FR" ? "Erreur lors de la sauvegarde" : "Error saving", "error");
     }
   };
 
   const handleDeleteProduct = async (id: number) => {
-    if (!confirm("Supprimer ce produit?")) return;
+    if (!confirm(currentLang === "FR" ? "Supprimer ce produit ?" : "Delete this product?")) return;
     try {
       await productService.deleteProduct(id);
-      notify("Produit supprimé");
+      notify(currentLang === "FR" ? "Produit supprimé" : "Product deleted");
       refreshAll();
     } catch {
-      notify("Erreur lors de la suppression", "error");
+      notify(currentLang === "FR" ? "Erreur lors de la suppression" : "Error deleting", "error");
     }
   };
 
   const handleOrderStatus = async (id: number, statut: CommandeWithDetails["statutCommande"]) => {
     try {
       await orderService.updateOrderStatus(id, statut);
-      notify("Statut de commande mis à jour");
+      notify(currentLang === "FR" ? "Statut de commande mis à jour" : "Order status updated");
       refreshAll();
     } catch {
-      notify("Erreur", "error");
+      notify(currentLang === "FR" ? "Erreur" : "Error", "error");
     }
   };
 
   const handleDeliveryStatus = async (id: number, statut: Livraison["statutLivraison"]) => {
     try {
       await deliveryService.updateStatus(id, statut);
-      notify("Statut de livraison mis à jour");
+      notify(currentLang === "FR" ? "Statut de livraison mis à jour" : "Delivery status updated");
       refreshAll();
     } catch {
-      notify("Erreur", "error");
+      notify(currentLang === "FR" ? "Erreur" : "Error", "error");
     }
   };
 
@@ -242,12 +246,12 @@ export default function AdminPage() {
   const doualaClients = clientsList.filter((c) => c.villeClient.toLowerCase().includes("douala"));
 
   const tabs: { id: Tab; label: string; icon: typeof Package }[] = [
-    { id: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-    { id: "products", label: "Produits", icon: Package },
-    { id: "orders", label: "Commandes", icon: ShoppingCart },
-    { id: "deliveries", label: "Livraisons", icon: Truck },
-    { id: "clients", label: "Clients", icon: Users },
-    { id: "messages", label: "Messages Support", icon: MessageSquare },
+    { id: "dashboard", label: currentLang === "FR" ? "Tableau de bord" : "Dashboard", icon: LayoutDashboard },
+    { id: "products", label: currentLang === "FR" ? "Produits" : "Products", icon: Package },
+    { id: "orders", label: currentLang === "FR" ? "Commandes" : "Orders", icon: ShoppingCart },
+    { id: "deliveries", label: currentLang === "FR" ? "Livraisons" : "Deliveries", icon: Truck },
+    { id: "clients", label: currentLang === "FR" ? "Clients" : "Clients", icon: Users },
+    { id: "messages", label: currentLang === "FR" ? "Messages Support" : "Support Messages", icon: MessageSquare },
   ];
 
   if (loading) {
@@ -268,9 +272,11 @@ export default function AdminPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="font-display text-3xl font-bold text-neutral-900 mb-2">
-        Administration
+        {currentLang === "FR" ? "Administration" : "Administration"}
       </h1>
-      <p className="text-neutral-500 mb-6">Gérez votre boutique VERHOJUST ÉPICERIE</p>
+      <p className="text-neutral-500 mb-6">
+        {currentLang === "FR" ? "Gérez votre boutique VERHOJUST ÉPICERIE" : "Manage your VERHOJUST GROCERY store"}
+      </p>
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 overflow-x-auto pb-1">
@@ -307,10 +313,10 @@ export default function AdminPage() {
         <div className="space-y-6 animate-fade-in">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: "Chiffre d'affaires", value: formatPrice(totalRevenue), icon: DollarSign, color: "text-emerald-600 bg-emerald-50" },
-              { label: "Commandes", value: String(orders.length), icon: ShoppingCart, color: "text-blue-600 bg-blue-50" },
-              { label: "Clients", value: String(clientsList.length), icon: Users, color: "text-violet-600 bg-violet-50" },
-              { label: "Stock bas", value: String(lowStock.length), icon: AlertTriangle, color: "text-accent-600 bg-accent-50" },
+              { label: currentLang === "FR" ? "Chiffre d'affaires" : "Total Revenue", value: formatPrice(totalRevenue), icon: DollarSign, color: "text-emerald-600 bg-emerald-50" },
+              { label: currentLang === "FR" ? "Commandes" : "Orders", value: String(orders.length), icon: ShoppingCart, color: "text-blue-600 bg-blue-50" },
+              { label: currentLang === "FR" ? "Clients" : "Clients", value: String(clientsList.length), icon: Users, color: "text-violet-600 bg-violet-50" },
+              { label: currentLang === "FR" ? "Stock bas" : "Low Stock", value: String(lowStock.length), icon: AlertTriangle, color: "text-accent-600 bg-accent-50" },
             ].map((stat) => (
               <div key={stat.label} className="card p-5">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${stat.color}`}>
@@ -329,7 +335,9 @@ export default function AdminPage() {
             <div className="card p-6">
               <div className="flex items-center gap-2 mb-4">
                 <AlertTriangle className="w-5 h-5 text-accent-600" />
-                <h3 className="font-semibold text-neutral-900">Alertes de stock</h3>
+                <h3 className="font-semibold text-neutral-900">
+                  {currentLang === "FR" ? "Alertes de stock" : "Stock alerts"}
+                </h3>
               </div>
               <div className="space-y-2">
                 {lowStock.map((p) => (
@@ -346,7 +354,7 @@ export default function AdminPage() {
                       <div>
                         <p className="text-sm font-medium text-neutral-900">{p.nomProduit}</p>
                         <p className="text-xs text-neutral-500">
-                          Seuil: {p.seuilAlertProduit} | Stock: {p.quantiteStockProduit}
+                          {currentLang === "FR" ? "Seuil :" : "Threshold:"} {p.seuilAlertProduit} | {currentLang === "FR" ? "Stock :" : "Stock:"} {p.quantiteStockProduit}
                         </p>
                       </div>
                     </div>
@@ -355,7 +363,9 @@ export default function AdminPage() {
                         ? "bg-red-100 text-red-700"
                         : "bg-accent-200 text-accent-800"
                     }`}>
-                      {p.quantiteStockProduit === 0 ? "Rupture" : "Stock bas"}
+                      {p.quantiteStockProduit === 0
+                        ? (currentLang === "FR" ? "Rupture" : "Out of stock")
+                        : (currentLang === "FR" ? "Stock bas" : "Low stock")}
                     </span>
                   </div>
                 ))}
@@ -373,15 +383,15 @@ export default function AdminPage() {
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div className="rounded-xl bg-primary-50 p-3">
                   <p className="text-2xl font-bold text-primary-700">{yaoundeOrders.length}</p>
-                  <p className="text-xs text-neutral-500">Commandes</p>
+                  <p className="text-xs text-neutral-500">{currentLang === "FR" ? "Commandes" : "Orders"}</p>
                 </div>
                 <div className="rounded-xl bg-blue-50 p-3">
                   <p className="text-2xl font-bold text-blue-700">{yaoundeDeliveries.length}</p>
-                  <p className="text-xs text-neutral-500">Livraisons</p>
+                  <p className="text-xs text-neutral-500">{currentLang === "FR" ? "Livraisons" : "Deliveries"}</p>
                 </div>
                 <div className="rounded-xl bg-violet-50 p-3">
                   <p className="text-2xl font-bold text-violet-700">{yaoundeClients.length}</p>
-                  <p className="text-xs text-neutral-500">Clients</p>
+                  <p className="text-xs text-neutral-500">{currentLang === "FR" ? "Clients" : "Clients"}</p>
                 </div>
               </div>
             </div>
@@ -393,15 +403,15 @@ export default function AdminPage() {
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div className="rounded-xl bg-emerald-50 p-3">
                   <p className="text-2xl font-bold text-emerald-700">{doualaOrders.length}</p>
-                  <p className="text-xs text-neutral-500">Commandes</p>
+                  <p className="text-xs text-neutral-500">{currentLang === "FR" ? "Commandes" : "Orders"}</p>
                 </div>
                 <div className="rounded-xl bg-blue-50 p-3">
                   <p className="text-2xl font-bold text-blue-700">{doualaDeliveries.length}</p>
-                  <p className="text-xs text-neutral-500">Livraisons</p>
+                  <p className="text-xs text-neutral-500">{currentLang === "FR" ? "Livraisons" : "Deliveries"}</p>
                 </div>
                 <div className="rounded-xl bg-violet-50 p-3">
                   <p className="text-2xl font-bold text-violet-700">{doualaClients.length}</p>
-                  <p className="text-xs text-neutral-500">Clients</p>
+                  <p className="text-xs text-neutral-500">{currentLang === "FR" ? "Clients" : "Clients"}</p>
                 </div>
               </div>
             </div>
@@ -411,11 +421,13 @@ export default function AdminPage() {
           <div className="card p-6">
             <div className="flex items-center gap-2 mb-4">
               <TrendingUp className="w-5 h-5 text-primary-600" />
-              <h3 className="font-semibold text-neutral-900">Commandes récentes</h3>
+              <h3 className="font-semibold text-neutral-900">
+                {currentLang === "FR" ? "Commandes récentes" : "Recent orders"}
+              </h3>
             </div>
             {orders.length === 0 ? (
               <p className="text-sm text-neutral-500 text-center py-6">
-                Aucune commande pour le moment
+                {currentLang === "FR" ? "Aucune commande pour le moment" : "No orders yet"}
               </p>
             ) : (
               <div className="space-y-2">
@@ -447,7 +459,9 @@ export default function AdminPage() {
       {tab === "products" && (
         <div className="animate-fade-in">
           <div className="flex justify-between items-center mb-4">
-            <p className="text-sm text-neutral-500">{products.length} produits</p>
+            <p className="text-sm text-neutral-500">
+              {products.length} {currentLang === "FR" ? "produits" : "products"}
+            </p>
             <button
               onClick={() => {
                 setEditingProduct(null);
@@ -455,7 +469,7 @@ export default function AdminPage() {
               }}
               className="btn-primary !py-2.5"
             >
-              <Plus className="w-4 h-4" /> Ajouter un produit
+              <Plus className="w-4 h-4" /> {currentLang === "FR" ? "Ajouter un produit" : "Add product"}
             </button>
           </div>
 
@@ -465,9 +479,9 @@ export default function AdminPage() {
               <table className="w-full">
                 <thead className="bg-neutral-50 border-b border-neutral-200">
                   <tr>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">Produit</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase hidden md:table-cell">Catégorie</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">Prix</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">{currentLang === "FR" ? "Produit" : "Product"}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase hidden md:table-cell">{currentLang === "FR" ? "Catégorie" : "Category"}</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">{currentLang === "FR" ? "Prix" : "Price"}</th>
                     <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">Stock</th>
                     <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">Actions</th>
                   </tr>
@@ -534,7 +548,7 @@ export default function AdminPage() {
         <div className="animate-fade-in space-y-3">
           {orders.length === 0 ? (
             <div className="card p-12 text-center">
-              <p className="text-neutral-500">Aucune commande</p>
+              <p className="text-neutral-500">{currentLang === "FR" ? "Aucune commande" : "No orders"}</p>
             </div>
           ) : (
             orders.map((o) => (
@@ -545,7 +559,7 @@ export default function AdminPage() {
                       {o.referenceCommande}
                     </p>
                     <p className="text-xs text-neutral-500">
-                      {formatDateTime(o.dateCommande)} • {o.lignes?.length ?? 0} article(s)
+                      {formatDateTime(o.dateCommande)} • {o.lignes?.length ?? 0} {currentLang === "FR" ? "article(s)" : "item(s)"}
                     </p>
                     <p className="text-xs text-neutral-500 mt-1">
                       {o.adresseLivraisonCommande}
@@ -562,12 +576,12 @@ export default function AdminPage() {
                       }
                       className="text-xs font-semibold rounded-lg border border-neutral-300 px-3 py-2 focus:outline-none focus:border-primary-400"
                     >
-                      <option value="en_attente">En attente</option>
-                      <option value="confirmee">Confirmée</option>
-                      <option value="preparation">En préparation</option>
-                      <option value="expediee">Expédiée</option>
-                      <option value="livree">Livrée</option>
-                      <option value="annulee">Annulée</option>
+                      <option value="en_attente">{currentLang === "FR" ? "En attente" : "Pending"}</option>
+                      <option value="confirmee">{currentLang === "FR" ? "Confirmée" : "Confirmed"}</option>
+                      <option value="preparation">{currentLang === "FR" ? "En préparation" : "In preparation"}</option>
+                      <option value="expediee">{currentLang === "FR" ? "Expédiée" : "Shipped"}</option>
+                      <option value="livree">{currentLang === "FR" ? "Livrée" : "Delivered"}</option>
+                      <option value="annulee">{currentLang === "FR" ? "Annulée" : "Cancelled"}</option>
                     </select>
                   </div>
                 </div>
@@ -592,7 +606,7 @@ export default function AdminPage() {
           {livraisons.length === 0 ? (
             <div className="card p-12 text-center">
               <Truck className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
-              <p className="text-neutral-500">Aucune livraison</p>
+              <p className="text-neutral-500">{currentLang === "FR" ? "Aucune livraison" : "No deliveries"}</p>
             </div>
           ) : (
             livraisons.map((l) => (
@@ -603,11 +617,11 @@ export default function AdminPage() {
                       {l.reference ?? `#${l.idLivraison}`}
                     </p>
                     <p className="text-xs text-neutral-500">
-                      Prévue: {formatDate(l.dateLivraisonPrevue)}
-                      {l.dateLivraisonReelle && ` • Livrée: ${formatDate(l.dateLivraisonReelle)}`}
+                      {currentLang === "FR" ? "Prévue :" : "Scheduled:"} {formatDate(l.dateLivraisonPrevue)}
+                      {l.dateLivraisonReelle && ` • ${currentLang === "FR" ? "Livrée :" : "Delivered:"} ${formatDate(l.dateLivraisonReelle)}`}
                     </p>
                     <p className="text-xs text-neutral-500 mt-1">{l.adresseLivraison}</p>
-                    <p className="text-xs text-neutral-400">Livreur: {l.livreur}</p>
+                    <p className="text-xs text-neutral-400">{currentLang === "FR" ? "Livreur :" : "Driver:"} {l.livreur}</p>
                   </div>
                   <select
                     value={l.statutLivraison}
@@ -616,11 +630,11 @@ export default function AdminPage() {
                     }
                     className="text-xs font-semibold rounded-lg border border-neutral-300 px-3 py-2 focus:outline-none focus:border-primary-400"
                   >
-                    <option value="programmee">Programmée</option>
-                    <option value="en_preparation">En préparation</option>
-                    <option value="en_cours">En cours</option>
-                    <option value="livree">Livrée</option>
-                    <option value="echouee">Échouée</option>
+                    <option value="programmee">{currentLang === "FR" ? "Programmée" : "Scheduled"}</option>
+                    <option value="en_preparation">{currentLang === "FR" ? "En préparation" : "In preparation"}</option>
+                    <option value="en_cours">{currentLang === "FR" ? "En cours" : "In progress"}</option>
+                    <option value="livree">{currentLang === "FR" ? "Livrée" : "Delivered"}</option>
+                    <option value="echouee">{currentLang === "FR" ? "Échouée" : "Failed"}</option>
                   </select>
                 </div>
               </div>
@@ -636,14 +650,18 @@ export default function AdminPage() {
             <div className="card p-5">
               <div className="flex items-center gap-2 mb-3">
                 <MapPin className="w-5 h-5 text-primary-600" />
-                <h3 className="font-semibold text-neutral-900">Clients à Yaoundé</h3>
+                <h3 className="font-semibold text-neutral-900">
+                  {currentLang === "FR" ? "Clients à Yaoundé" : "Clients in Yaoundé"}
+                </h3>
               </div>
               <p className="text-3xl font-bold text-primary-700">{yaoundeClients.length}</p>
             </div>
             <div className="card p-5">
               <div className="flex items-center gap-2 mb-3">
                 <MapPin className="w-5 h-5 text-emerald-600" />
-                <h3 className="font-semibold text-neutral-900">Clients à Douala</h3>
+                <h3 className="font-semibold text-neutral-900">
+                  {currentLang === "FR" ? "Clients à Douala" : "Clients in Douala"}
+                </h3>
               </div>
               <p className="text-3xl font-bold text-emerald-700">{doualaClients.length}</p>
             </div>
@@ -653,10 +671,10 @@ export default function AdminPage() {
               <table className="w-full">
                 <thead className="bg-neutral-50 border-b border-neutral-200">
                   <tr>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">Client</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase hidden md:table-cell">Contact</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">Ville</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase hidden md:table-cell">Inscrit le</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">{currentLang === "FR" ? "Client" : "Client"}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase hidden md:table-cell">{currentLang === "FR" ? "Contact" : "Contact"}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">{currentLang === "FR" ? "Ville" : "City"}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase hidden md:table-cell">{currentLang === "FR" ? "Inscrit le" : "Joined on"}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
@@ -700,12 +718,18 @@ export default function AdminPage() {
           {/* Liste des conversations */}
           <div className="card overflow-hidden flex flex-col md:col-span-1">
             <div className="p-4 border-b border-neutral-200 bg-neutral-50">
-              <h3 className="font-semibold text-sm text-neutral-900">Conversations Clients</h3>
-              <p className="text-xs text-neutral-500">{conversations.length} discussion(s)</p>
+              <h3 className="font-semibold text-sm text-neutral-900">
+                {currentLang === "FR" ? "Conversations Clients" : "Customer Conversations"}
+              </h3>
+              <p className="text-xs text-neutral-500">
+                {conversations.length} {currentLang === "FR" ? "discussion(s)" : "discussion(s)"}
+              </p>
             </div>
             <div className="flex-1 overflow-y-auto divide-y divide-neutral-100">
               {conversations.length === 0 ? (
-                <p className="text-xs text-neutral-400 text-center py-10">Aucun message pour le moment</p>
+                <p className="text-xs text-neutral-400 text-center py-10">
+                  {currentLang === "FR" ? "Aucun message pour le moment" : "No messages yet"}
+                </p>
               ) : (
                 conversations.map((conv) => (
                   <div
@@ -717,7 +741,7 @@ export default function AdminPage() {
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-bold text-neutral-800 truncate">
-                        Client #{conv.session_id.substring(0, 8)}
+                        {currentLang === "FR" ? "Client #" : "Customer #"}{conv.session_id.substring(0, 8)}
                       </span>
                       <span className="text-[10px] text-neutral-400">
                         {formatDateTime(conv.lastTime)}
@@ -737,7 +761,7 @@ export default function AdminPage() {
                 <div className="p-4 border-b border-neutral-200 bg-neutral-50 flex items-center justify-between">
                   <div>
                     <h3 className="font-semibold text-sm text-neutral-900">
-                      Discussion avec Client #{selectedSession.substring(0, 8)}
+                      {currentLang === "FR" ? "Discussion avec Client #" : "Chat with Customer #"}{selectedSession.substring(0, 8)}
                     </h3>
                     <p className="text-xs text-neutral-500">Session ID: {selectedSession}</p>
                   </div>
@@ -754,7 +778,9 @@ export default function AdminPage() {
                         }`}
                       >
                         <p className="text-[10px] opacity-70 mb-0.5 font-semibold">
-                          {m.sender === "admin" ? "Vous (Admin)" : "Client"}
+                          {m.sender === "admin"
+                            ? (currentLang === "FR" ? "Vous (Admin)" : "You (Admin)")
+                            : (currentLang === "FR" ? "Client" : "Customer")}
                         </p>
                         {m.message}
                       </div>
@@ -767,19 +793,23 @@ export default function AdminPage() {
                     type="text"
                     value={replyInput}
                     onChange={(e) => setReplyInput(e.target.value)}
-                    placeholder="Écrivez votre réponse au client..."
+                    placeholder={currentLang === "FR" ? "Écrivez votre réponse au client..." : "Type your reply to the customer..."}
                     className="flex-1 text-sm rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 focus:outline-none focus:border-primary-400"
                   />
                   <button type="submit" className="btn-primary !px-4 !py-2.5 flex items-center gap-1.5">
                     <Send className="w-4 h-4" />
-                    <span>Envoyer</span>
+                    <span>{currentLang === "FR" ? "Envoyer" : "Send"}</span>
                   </button>
                 </form>
               </>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-neutral-400">
                 <MessageSquare className="w-12 h-12 text-neutral-300 mb-2" />
-                <p className="text-sm font-medium">Sélectionnez une conversation à gauche pour répondre au client en direct.</p>
+                <p className="text-sm font-medium">
+                  {currentLang === "FR"
+                    ? "Sélectionnez une conversation à gauche pour répondre au client en direct."
+                    : "Select a conversation on the left to reply live to the customer."}
+                </p>
               </div>
             )}
           </div>
@@ -791,6 +821,7 @@ export default function AdminPage() {
         <ProductFormModal
           product={editingProduct}
           types={types}
+          currentLang={currentLang}
           onClose={() => {
             setShowForm(false);
             setEditingProduct(null);
@@ -808,11 +839,13 @@ export default function AdminPage() {
 function ProductFormModal({
   product,
   types,
+  currentLang = "FR",
   onClose,
   onSave,
 }: {
   product: Produit | null;
   types: TypeProduit[];
+  currentLang?: "FR" | "EN";
   onClose: () => void;
   onSave: (data: Partial<Produit>) => void;
 }) {
@@ -840,7 +873,9 @@ function ProductFormModal({
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-scale-in">
         <div className="flex items-center justify-between p-5 border-b border-neutral-200 sticky top-0 bg-white rounded-t-2xl">
           <h3 className="font-display font-bold text-lg text-neutral-900">
-            {product ? "Modifier le produit" : "Nouveau produit"}
+            {product
+              ? (currentLang === "FR" ? "Modifier le produit" : "Edit Product")
+              : (currentLang === "FR" ? "Nouveau produit" : "New Product")}
           </h3>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-neutral-100">
             <X className="w-5 h-5" />
@@ -848,7 +883,9 @@ function ProductFormModal({
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
-            <label className="label">Nom du produit</label>
+            <label className="label">
+              {currentLang === "FR" ? "Nom du produit" : "Product Name"}
+            </label>
             <input
               required
               value={form.nomProduit}
@@ -857,7 +894,9 @@ function ProductFormModal({
             />
           </div>
           <div>
-            <label className="label">Description</label>
+            <label className="label">
+              {currentLang === "FR" ? "Description" : "Description"}
+            </label>
             <textarea
               required
               value={form.descriptionProduit}
@@ -867,7 +906,9 @@ function ProductFormModal({
             />
           </div>
           <div>
-            <label className="label">Image (URL)</label>
+            <label className="label">
+              {currentLang === "FR" ? "Image (URL)" : "Image (URL)"}
+            </label>
             <input
               required
               value={form.imageProduit}
@@ -879,19 +920,23 @@ function ProductFormModal({
               <div className="mt-2 flex items-center gap-3">
                 <img
                   src={form.imageProduit}
-                  alt="Aperçu"
+                  alt={currentLang === "FR" ? "Aperçu" : "Preview"}
                   className="w-16 h-16 rounded-xl object-cover border border-neutral-200"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.opacity = "0.3";
                   }}
                 />
-                <p className="text-xs text-neutral-400">Aperçu de l'image</p>
+                <p className="text-xs text-neutral-400">
+                  {currentLang === "FR" ? "Aperçu de l'image" : "Image preview"}
+                </p>
               </div>
             )}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Prix (FCFA)</label>
+              <label className="label">
+                {currentLang === "FR" ? "Prix (FCFA)" : "Price (FCFA)"}
+              </label>
               <input
                 type="number"
                 required
@@ -902,7 +947,9 @@ function ProductFormModal({
               />
             </div>
             <div>
-              <label className="label">Catégorie</label>
+              <label className="label">
+                {currentLang === "FR" ? "Catégorie" : "Category"}
+              </label>
               <select
                 value={form.idTypeProduit}
                 onChange={(e) => update("idTypeProduit", Number(e.target.value))}
@@ -929,7 +976,9 @@ function ProductFormModal({
               />
             </div>
             <div>
-              <label className="label">Seuil d'alerte</label>
+              <label className="label">
+                {currentLang === "FR" ? "Seuil d'alerte" : "Alert Threshold"}
+              </label>
               <input
                 type="number"
                 required
@@ -941,22 +990,24 @@ function ProductFormModal({
             </div>
           </div>
           <div>
-            <label className="label">Statut</label>
+            <label className="label">
+              {currentLang === "FR" ? "Statut" : "Status"}
+            </label>
             <select
               value={form.statutProduit}
               onChange={(e) => update("statutProduit", e.target.value)}
               className="input"
             >
-              <option value="actif">Actif</option>
-              <option value="inactif">Inactif</option>
+              <option value="actif">{currentLang === "FR" ? "Actif" : "Active"}</option>
+              <option value="inactif">{currentLang === "FR" ? "Inactif" : "Inactive"}</option>
             </select>
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="btn-secondary flex-1">
-              Annuler
+              {currentLang === "FR" ? "Annuler" : "Cancel"}
             </button>
             <button type="submit" className="btn-primary flex-1">
-              <Save className="w-4 h-4" /> Enregistrer
+              <Save className="w-4 h-4" /> {currentLang === "FR" ? "Enregistrer" : "Save"}
             </button>
           </div>
         </form>

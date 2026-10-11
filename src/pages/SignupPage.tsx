@@ -13,7 +13,11 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
 
-export default function SignupPage() {
+interface SignupPageProps {
+  currentLang?: "FR" | "EN";
+}
+
+export default function SignupPage({ currentLang = "FR" }: SignupPageProps) {
   const { signup, loading } = useAuth();
   const { notify } = useToast();
   const navigate = useNavigate();
@@ -37,11 +41,19 @@ export default function SignupPage() {
     e.preventDefault();
     setError("");
     if (form.motDePasse !== form.confirmPassword) {
-      setError("Les mots de passe ne correspondent pas");
+      setError(
+        currentLang === "FR"
+          ? "Les mots de passe ne correspondent pas"
+          : "Passwords do not match"
+      );
       return;
     }
     if (form.motDePasse.length < 6) {
-      setError("Le mot de passe doit contenir au moins 6 caractères");
+      setError(
+        currentLang === "FR"
+          ? "Le mot de passe doit contenir au moins 6 caractères"
+          : "Password must be at least 6 characters"
+      );
       return;
     }
     try {
@@ -54,10 +66,20 @@ export default function SignupPage() {
         villeClient: form.villeClient,
         motDePasse: form.motDePasse,
       });
-      notify(`Bienvenue, ${u.client.prenomClient}!`);
+      notify(
+        currentLang === "FR"
+          ? `Bienvenue, ${u.client.prenomClient}!`
+          : `Welcome, ${u.client.prenomClient}!`
+      );
       navigate("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur lors de l'inscription");
+      setError(
+        err instanceof Error
+          ? err.message
+          : currentLang === "FR"
+          ? "Erreur lors de l'inscription"
+          : "Error during registration"
+      );
     }
   };
 
@@ -71,10 +93,12 @@ export default function SignupPage() {
             </div>
           </Link>
           <h1 className="font-display text-2xl font-bold text-neutral-900">
-            Créer un compte
+            {currentLang === "FR" ? "Créer un compte" : "Create an Account"}
           </h1>
           <p className="text-neutral-500 text-sm mt-1">
-            Rejoignez VERHOJUST ÉPICERIE pour commander en ligne
+            {currentLang === "FR"
+              ? "Rejoignez VERHOJUST ÉPICERIE pour commander en ligne"
+              : "Join VERHOJUST GROCERY STORE to shop online"}
           </p>
         </div>
 
@@ -89,7 +113,9 @@ export default function SignupPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="label">Prénom</label>
+                <label className="label">
+                  {currentLang === "FR" ? "Prénom" : "First Name"}
+                </label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                   <input
@@ -102,7 +128,9 @@ export default function SignupPage() {
                 </div>
               </div>
               <div>
-                <label className="label">Nom</label>
+                <label className="label">
+                  {currentLang === "FR" ? "Nom" : "Last Name"}
+                </label>
                 <input
                   required
                   value={form.nomClient}
@@ -114,7 +142,9 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="label">Email</label>
+              <label className="label">
+                {currentLang === "FR" ? "Email" : "Email"}
+              </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                 <input
@@ -122,14 +152,16 @@ export default function SignupPage() {
                   required
                   value={form.emailClient}
                   onChange={(e) => update("emailClient", e.target.value)}
-                  placeholder="votre@email.com"
+                  placeholder={currentLang === "FR" ? "votre@email.com" : "your@email.com"}
                   className="input pl-10"
                 />
               </div>
             </div>
 
             <div>
-              <label className="label">Téléphone</label>
+              <label className="label">
+                {currentLang === "FR" ? "Téléphone" : "Phone"}
+              </label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                 <input
@@ -144,21 +176,25 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="label">Adresse</label>
+              <label className="label">
+                {currentLang === "FR" ? "Adresse" : "Address"}
+              </label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                 <input
                   required
                   value={form.adresseClient}
                   onChange={(e) => update("adresseClient", e.target.value)}
-                  placeholder="Quartier, rue..."
+                  placeholder={currentLang === "FR" ? "Quartier, rue..." : "Neighborhood, street..."}
                   className="input pl-10"
                 />
               </div>
             </div>
 
             <div>
-              <label className="label">Ville</label>
+              <label className="label">
+                {currentLang === "FR" ? "Ville" : "City"}
+              </label>
               <input
                 required
                 value={form.villeClient}
@@ -169,7 +205,9 @@ export default function SignupPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="label">Mot de passe</label>
+                <label className="label">
+                  {currentLang === "FR" ? "Mot de passe" : "Password"}
+                </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                   <input
@@ -183,7 +221,9 @@ export default function SignupPage() {
                 </div>
               </div>
               <div>
-                <label className="label">Confirmer</label>
+                <label className="label">
+                  {currentLang === "FR" ? "Confirmer" : "Confirm"}
+                </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                   <input
@@ -203,7 +243,8 @@ export default function SignupPage() {
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
-                  Créer mon compte <ArrowRight className="w-4 h-4" />
+                  {currentLang === "FR" ? "Créer mon compte" : "Create My Account"}{" "}
+                  <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
@@ -211,9 +252,9 @@ export default function SignupPage() {
         </div>
 
         <p className="text-center text-sm text-neutral-500 mt-6">
-          Déjà un compte?{" "}
+          {currentLang === "FR" ? "Déjà un compte?" : "Already have an account?"}{" "}
           <Link to="/login" className="text-primary-600 font-semibold hover:text-primary-700">
-            Se connecter
+            {currentLang === "FR" ? "Se connecter" : "Log in"}
           </Link>
         </p>
       </div>

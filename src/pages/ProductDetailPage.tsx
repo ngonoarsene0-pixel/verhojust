@@ -18,7 +18,11 @@ import { useToast } from "../contexts/ToastContext";
 import { formatPrice, formatDate } from "../lib/format";
 import StarRating from "../components/StarRating";
 
-export default function ProductDetailPage() {
+interface ProductDetailPageProps {
+  currentLang?: "FR" | "EN";
+}
+
+export default function ProductDetailPage({ currentLang = "FR" }: ProductDetailPageProps) {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
@@ -65,9 +69,11 @@ export default function ProductDetailPage() {
   if (!produit) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-        <p className="text-neutral-500 mb-4">Produit introuvable</p>
+        <p className="text-neutral-500 mb-4">
+          {currentLang === "FR" ? "Produit introuvable" : "Product not found"}
+        </p>
         <Link to="/catalogue" className="btn-primary">
-          Retour au catalogue
+          {currentLang === "FR" ? "Retour au catalogue" : "Back to catalog"}
         </Link>
       </div>
     );
@@ -75,18 +81,44 @@ export default function ProductDetailPage() {
 
   const stockStatus = productService.getStockStatus(produit);
   const stockConfig = {
-    rupture: { label: "Rupture de stock", color: "text-red-600", bg: "bg-red-50", icon: AlertTriangle },
-    alerte: { label: `Stock limité (${produit.quantiteStockProduit} restants)`, color: "text-accent-700", bg: "bg-accent-50", icon: AlertTriangle },
-    en_stock: { label: "En stock", color: "text-emerald-600", bg: "bg-emerald-50", icon: Check },
+    rupture: {
+      label: currentLang === "FR" ? "Rupture de stock" : "Out of stock",
+      color: "text-red-600",
+      bg: "bg-red-50",
+      icon: AlertTriangle,
+    },
+    alerte: {
+      label: currentLang === "FR" 
+        ? `Stock limité (${produit.quantiteStockProduit} restants)` 
+        : `Limited stock (${produit.quantiteStockProduit} left)`,
+      color: "text-accent-700",
+      bg: "bg-accent-50",
+      icon: AlertTriangle,
+    },
+    en_stock: {
+      label: currentLang === "FR" ? "En stock" : "In stock",
+      color: "text-emerald-600",
+      bg: "bg-emerald-50",
+      icon: Check,
+    },
   }[stockStatus];
 
   const handleAddToCart = async () => {
     if (stockStatus === "rupture") return;
     try {
       await addToCart(produit.idProduit, quantite);
-      notify(`${quantite} × ${produit.nomProduit} ajouté au panier`);
+      notify(
+        currentLang === "FR"
+          ? `${quantite} × ${produit.nomProduit} ajouté au panier`
+          : `${quantite} × ${produit.nomProduit} added to cart`
+      );
     } catch {
-      notify("Erreur lors de l'ajout au panier", "error");
+      notify(
+        currentLang === "FR"
+          ? "Erreur lors de l'ajout au panier"
+          : "Error adding item to cart",
+        "error"
+      );
     }
   };
 
@@ -96,7 +128,7 @@ export default function ProductDetailPage() {
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 mb-6 transition-colors"
       >
-        <ArrowLeft className="w-4 h-4" /> Retour
+        <ArrowLeft className="w-4 h-4" /> {currentLang === "FR" ? "Retour" : "Back"}
       </button>
 
       <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
@@ -158,7 +190,9 @@ export default function ProductDetailPage() {
               </button>
             </div>
             <span className="text-sm text-neutral-500">
-              Max: {produit.quantiteStockProduit} unités
+              {currentLang === "FR"
+                ? `Max: ${produit.quantiteStockProduit} unités`
+                : `Max: ${produit.quantiteStockProduit} units`}
             </span>
           </div>
 
@@ -169,29 +203,31 @@ export default function ProductDetailPage() {
               disabled={stockStatus === "rupture"}
               className="btn-primary flex-1"
             >
-              <ShoppingCart className="w-4 h-4" /> Ajouter au panier
+              <ShoppingCart className="w-4 h-4" /> {currentLang === "FR" ? "Ajouter au panier" : "Add to cart"}
             </button>
             <Link to="/catalogue" className="btn-secondary">
-              Continuer mes achats
+              {currentLang === "FR" ? "Continuer mes achats" : "Continue shopping"}
             </Link>
           </div>
 
           {/* Meta */}
           <div className="mt-8 pt-6 border-t border-neutral-200 space-y-2 text-sm text-neutral-500">
             <div className="flex justify-between">
-              <span>Référence produit</span>
+              <span>{currentLang === "FR" ? "Référence produit" : "Product SKU"}</span>
               <span className="font-mono font-medium text-neutral-700">
                 #{produit.idProduit.toString().padStart(5, "0")}
               </span>
             </div>
             <div className="flex justify-between">
-              <span>Seuil d'alerte stock</span>
-              <span className="font-medium text-neutral-700">{produit.seuilAlertProduit} unités</span>
+              <span>{currentLang === "FR" ? "Seuil d'alerte stock" : "Stock alert threshold"}</span>
+              <span className="font-medium text-neutral-700">
+                {produit.seuilAlertProduit} {currentLang === "FR" ? "unités" : "units"}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span>Ajouté le</span>
+              <span>{currentLang === "FR" ? "Ajouté le" : "Added on"}</span>
               <span className="font-medium text-neutral-700">
-                {new Date(produit.dateAjoutProduit).toLocaleDateString("fr-FR")}
+                {new Date(produit.dateAjoutProduit).toLocaleDateString(currentLang === "FR" ? "fr-FR" : "en-US")}
               </span>
             </div>
           </div>
@@ -201,20 +237,22 @@ export default function ProductDetailPage() {
       {/* Reviews Section */}
       <div className="mt-12">
         <h2 className="font-display text-2xl font-bold text-neutral-900 mb-1">
-          Avis clients
+          {currentLang === "FR" ? "Avis clients" : "Customer Reviews"}
         </h2>
         <div className="flex items-center gap-3 mb-6">
           <StarRating rating={reviewService.getAverage(reviews)} size={20} />
           <span className="text-sm text-neutral-500">
             {reviews.length > 0
-              ? `${reviewService.getAverage(reviews).toFixed(1)}/5 • ${reviews.length} avis`
-              : "Aucun avis pour le moment"}
+              ? `${reviewService.getAverage(reviews).toFixed(1)}/5 • ${reviews.length} ${currentLang === "FR" ? "avis" : "reviews"}`
+              : currentLang === "FR" ? "Aucun avis pour le moment" : "No reviews yet"}
           </span>
         </div>
 
         {/* Review form */}
         <div className="card p-6 mb-6">
-          <h3 className="font-semibold text-neutral-900 mb-4">Laisser un avis</h3>
+          <h3 className="font-semibold text-neutral-900 mb-4">
+            {currentLang === "FR" ? "Laisser un avis" : "Leave a review"}
+          </h3>
           <form
             onSubmit={async (e) => {
               e.preventDefault();
@@ -231,9 +269,9 @@ export default function ProductDetailPage() {
                 setReviews((prev) => [...prev, created]);
                 setNewComment("");
                 setNewRating(5);
-                notify("Merci pour votre avis !");
+                notify(currentLang === "FR" ? "Merci pour votre avis !" : "Thank you for your review!");
               } catch {
-                notify("Erreur lors de l'envoi de l'avis", "error");
+                notify(currentLang === "FR" ? "Erreur lors de l'envoi de l'avis" : "Error sending review", "error");
               } finally {
                 setSubmitting(false);
               }
@@ -241,32 +279,34 @@ export default function ProductDetailPage() {
             className="space-y-4"
           >
             <div>
-              <label className="label">Votre nom</label>
+              <label className="label">{currentLang === "FR" ? "Votre nom" : "Your name"}</label>
               <input
                 required
                 value={reviewAuthor}
                 onChange={(e) => setReviewAuthor(e.target.value)}
-                placeholder="Ex: Jean D."
+                placeholder={currentLang === "FR" ? "Ex: Jean D." : "Ex: John D."}
                 className="input"
               />
             </div>
             <div>
-              <label className="label">Votre note</label>
+              <label className="label">{currentLang === "FR" ? "Votre note" : "Your rating"}</label>
               <StarRating rating={newRating} size={28} interactive onRate={setNewRating} />
             </div>
             <div>
-              <label className="label">Votre commentaire</label>
+              <label className="label">{currentLang === "FR" ? "Votre commentaire" : "Your comment"}</label>
               <textarea
                 required
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 rows={3}
-                placeholder="Partagez votre expérience avec ce produit..."
+                placeholder={currentLang === "FR" ? "Partagez votre expérience avec ce produit..." : "Share your experience with this product..."}
                 className="input resize-none"
               />
             </div>
             <button type="submit" disabled={submitting} className="btn-primary">
-              {submitting ? "Envoi..." : "Publier mon avis"}
+              {submitting
+                ? currentLang === "FR" ? "Envoi..." : "Submitting..."
+                : currentLang === "FR" ? "Publier mon avis" : "Post my review"}
             </button>
           </form>
         </div>
@@ -275,7 +315,9 @@ export default function ProductDetailPage() {
         <div className="space-y-3">
           {reviews.length === 0 ? (
             <p className="text-sm text-neutral-400 text-center py-8">
-              Soyez le premier à donner votre avis sur ce produit.
+              {currentLang === "FR"
+                ? "Soyez le premier à donner votre avis sur ce produit."
+                : "Be the first to leave a review for this product."}
             </p>
           ) : (
             reviews.map((r) => (

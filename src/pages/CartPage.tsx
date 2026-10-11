@@ -11,7 +11,11 @@ import { useCart } from "../contexts/CartContext";
 import { formatPrice } from "../lib/format";
 import { BUSINESS } from "../lib/db";
 
-export default function CartPage() {
+interface CartPageProps {
+  currentLang?: "FR" | "EN";
+}
+
+export default function CartPage({ currentLang = "FR" }: CartPageProps) {
   const { items, loading, refresh, updateQuantity, removeFromCart, clearCart, totalAmount } = useCart();
   const navigate = useNavigate();
 
@@ -38,13 +42,15 @@ export default function CartPage() {
           <ShoppingCart className="w-10 h-10 text-neutral-300" />
         </div>
         <h2 className="text-2xl font-display font-bold text-neutral-900 mb-2">
-          Votre panier est vide
+          {currentLang === "FR" ? "Votre panier est vide" : "Your cart is empty"}
         </h2>
         <p className="text-neutral-500 mb-6">
-          Parcourez notre catalogue et ajoutez vos produits préférés.
+          {currentLang === "FR"
+            ? "Parcourez notre catalogue et ajoutez vos produits préférés."
+            : "Browse our catalog and add your favorite products."}
         </p>
         <Link to="/catalogue" className="btn-primary">
-          Explorer le catalogue <ArrowRight className="w-4 h-4" />
+          {currentLang === "FR" ? "Explorer le catalogue" : "Browse catalog"} <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
     );
@@ -57,13 +63,13 @@ export default function CartPage() {
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="font-display text-3xl font-bold text-neutral-900">
-          Mon Panier
+          {currentLang === "FR" ? "Mon Panier" : "My Cart"}
         </h1>
         <button
           onClick={() => clearCart()}
           className="flex items-center gap-2 text-sm font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl transition-colors"
         >
-          <Trash2 className="w-4 h-4" /> Vider le panier
+          <Trash2 className="w-4 h-4" /> {currentLang === "FR" ? "Vider le panier" : "Clear cart"}
         </button>
       </div>
 
@@ -93,7 +99,7 @@ export default function CartPage() {
                   {item.produit.nomProduit}
                 </Link>
                 <p className="text-sm text-neutral-500 mb-2">
-                  {formatPrice(item.produit.prixProduit)} / unité
+                  {formatPrice(item.produit.prixProduit)} / {currentLang === "FR" ? "unité" : "unit"}
                 </p>
                 <div className="flex items-center gap-2">
                   <div className="flex items-center border border-neutral-300 rounded-lg overflow-hidden">
@@ -139,25 +145,32 @@ export default function CartPage() {
         <div className="lg:col-span-1">
           <div className="card p-6 sticky top-24">
             <h3 className="font-display font-bold text-lg text-neutral-900 mb-4">
-              Récapitulatif
+              {currentLang === "FR" ? "Récapitulatif" : "Summary"}
             </h3>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between text-neutral-600">
-                <span>Sous-total ({items.length} article(s))</span>
+                <span>
+                  {currentLang === "FR"
+                    ? `Sous-total (${items.length} article(s))`
+                    : `Subtotal (${items.length} item(s))`}
+                </span>
                 <span className="font-semibold text-neutral-900">
                   {formatPrice(totalAmount)}
                 </span>
               </div>
               <div className="flex justify-between text-neutral-600">
-                <span>Frais de livraison</span>
+                <span>{currentLang === "FR" ? "Frais de livraison" : "Delivery fee"}</span>
                 <span className="font-semibold text-neutral-900">
-                  {deliveryFee === 0 ? "Gratuit" : formatPrice(deliveryFee)}
+                  {deliveryFee === 0
+                    ? currentLang === "FR" ? "Gratuit" : "Free"
+                    : formatPrice(deliveryFee)}
                 </span>
               </div>
               {deliveryFee > 0 && (
                 <p className="text-xs text-neutral-400 bg-neutral-50 rounded-lg p-2">
-                  Ajoutez {formatPrice(BUSINESS.freeDeliveryThreshold - totalAmount)} pour
-                  la livraison gratuite
+                  {currentLang === "FR"
+                    ? `Ajoutez ${formatPrice(BUSINESS.freeDeliveryThreshold - totalAmount)} pour la livraison gratuite`
+                    : `Add ${formatPrice(BUSINESS.freeDeliveryThreshold - totalAmount)} for free delivery`}
                 </p>
               )}
               <div className="border-t border-neutral-200 pt-3 flex justify-between">
@@ -171,10 +184,10 @@ export default function CartPage() {
               onClick={() => navigate("/checkout")}
               className="btn-primary w-full mt-6"
             >
-              Passer commande <ArrowRight className="w-4 h-4" />
+              {currentLang === "FR" ? "Passer commande" : "Checkout"} <ArrowRight className="w-4 h-4" />
             </button>
             <Link to="/catalogue" className="btn-ghost w-full mt-2 justify-center">
-              Continuer mes achats
+              {currentLang === "FR" ? "Continuer mes achats" : "Continue shopping"}
             </Link>
           </div>
         </div>

@@ -24,7 +24,11 @@ const categoryImages: Record<number, string> = {
   5: "/images/pexels-photo-34940649.avif",
 };
 
-export default function HomePage() {
+interface HomePageProps {
+  currentLang?: "FR" | "EN";
+}
+
+export default function HomePage({ currentLang = "FR" }: HomePageProps) {
   const [products, setProducts] = useState<ProduitWithType[]>([]);
   const [types, setTypes] = useState<TypeProduit[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,23 +59,24 @@ export default function HomePage() {
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div className="animate-slide-up">
               <span className="badge bg-primary-100 text-primary-700 mb-4">
-                <Leaf className="w-3.5 h-3.5" /> Produits frais & de qualité
+                <Leaf className="w-3.5 h-3.5" /> {currentLang === "FR" ? "Produits frais & de qualité" : "Fresh & quality products"}
               </span>
               <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-extrabold text-neutral-900 leading-tight mb-4">
-                Votre épicerie
-                <span className="text-primary-600"> premium </span>
-                à Yaoundé et Douala
+                {currentLang === "FR" ? "Votre épicerie" : "Your"}
+                <span className="text-primary-600"> {currentLang === "FR" ? "premium" : "premium grocery store"} </span>
+                {currentLang === "FR" ? "à Yaoundé et Douala" : "in Yaounde and Douala"}
               </h1>
               <p className="text-lg text-neutral-600 mb-8 max-w-lg leading-relaxed">
-                Découvrez une sélection soignée de produits frais et d'épicerie,
-                livrés rapidement à Yaoundé et Douala.
+                {currentLang === "FR" 
+                  ? "Découvrez une sélection soignée de produits frais et d'épicerie, livrés rapidement à Yaoundé et Douala." 
+                  : "Discover a curated selection of fresh products and groceries, delivered quickly to Yaounde and Douala."}
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link to="/catalogue" className="btn-primary">
-                  Explorer le catalogue <ArrowRight className="w-4 h-4" />
+                  {currentLang === "FR" ? "Explorer le catalogue" : "Browse catalog"} <ArrowRight className="w-4 h-4" />
                 </Link>
                 <Link to="/login" className="btn-secondary">
-                  Créer un compte
+                  {currentLang === "FR" ? "Créer un compte" : "Create an account"}
                 </Link>
               </div>
             </div>
@@ -101,10 +106,34 @@ export default function HomePage() {
       <section className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
           {[
-            { icon: Truck, title: "Livraison rapide", desc: "Yaoundé et Douala", gradient: "from-blue-500 to-cyan-400", bg: "bg-blue-50" },
-            { icon: Leaf, title: "Produits frais", desc: "Directement de nos fournisseurs", gradient: "from-emerald-500 to-green-400", bg: "bg-emerald-50" },
-            { icon: ShieldCheck, title: "Paiement sécurisé", desc: "Espèces, Mobile Money, carte", gradient: "from-amber-500 to-orange-400", bg: "bg-amber-50" },
-            { icon: Clock, title: "Service 7j/7", desc: "Toujours à votre service", gradient: "from-rose-500 to-pink-400", bg: "bg-rose-50" },
+            { 
+              icon: Truck, 
+              title: currentLang === "FR" ? "Livraison rapide" : "Fast delivery", 
+              desc: currentLang === "FR" ? "Yaoundé et Douala" : "Yaounde and Douala", 
+              gradient: "from-blue-500 to-cyan-400", 
+              bg: "bg-blue-50" 
+            },
+            { 
+              icon: Leaf, 
+              title: currentLang === "FR" ? "Produits frais" : "Fresh products", 
+              desc: currentLang === "FR" ? "Directement de nos fournisseurs" : "Directly from suppliers", 
+              gradient: "from-emerald-500 to-green-400", 
+              bg: "bg-emerald-50" 
+            },
+            { 
+              icon: ShieldCheck, 
+              title: currentLang === "FR" ? "Paiement sécurisé" : "Secure payment", 
+              desc: currentLang === "FR" ? "Espèces, Mobile Money, carte" : "Cash, Mobile Money, card", 
+              gradient: "from-amber-500 to-orange-400", 
+              bg: "bg-amber-50" 
+            },
+            { 
+              icon: Clock, 
+              title: currentLang === "FR" ? "Service 7j/7" : "24/7 Service", 
+              desc: currentLang === "FR" ? "Toujours à votre service" : "Always at your service", 
+              gradient: "from-rose-500 to-pink-400", 
+              bg: "bg-rose-50" 
+            },
           ].map((f) => (
             <div
               key={f.title}
@@ -133,9 +162,11 @@ export default function HomePage() {
         <div className="flex items-end justify-between mb-6">
           <div>
             <h2 className="font-display text-2xl md:text-3xl font-bold text-neutral-900">
-              Nos catégories
+              {currentLang === "FR" ? "Nos catégories" : "Our categories"}
             </h2>
-            <p className="text-neutral-500 mt-1">Parcourez par type de produit</p>
+            <p className="text-neutral-500 mt-1">
+              {currentLang === "FR" ? "Parcourez par type de produit" : "Browse by product type"}
+            </p>
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -172,15 +203,17 @@ export default function HomePage() {
         <div className="flex items-end justify-between mb-6">
           <div>
             <h2 className="font-display text-2xl md:text-3xl font-bold text-neutral-900">
-              Produits populaires
+              {currentLang === "FR" ? "Produits populaires" : "Popular products"}
             </h2>
-            <p className="text-neutral-500 mt-1">Notre sélection du moment</p>
+            <p className="text-neutral-500 mt-1">
+              {currentLang === "FR" ? "Notre sélection du moment" : "Our current selection"}
+            </p>
           </div>
           <Link
             to="/catalogue"
             className="text-sm font-semibold text-primary-600 hover:text-primary-700 flex items-center gap-1"
           >
-            Voir tout <ArrowRight className="w-4 h-4" />
+            {currentLang === "FR" ? "Voir tout" : "See all"} <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
         {loading ? (
@@ -213,18 +246,18 @@ export default function HomePage() {
           </div>
           <div className="relative">
             <h2 className="font-display text-2xl md:text-4xl font-bold mb-3">
-              Faites vos courses en ligne dès aujourd'hui
+              {currentLang === "FR" ? "Faites vos courses en ligne dès aujourd'hui" : "Shop your groceries online today"}
             </h2>
             <p className="text-primary-100 mb-6 max-w-xl mx-auto">
-              Inscrivez-vous gratuitement et profitez d'une livraison rapide à Yaoundé et Douala.
-              Frais de livraison: {BUSINESS.deliveryFee} {BUSINESS.currency}.
-              Livraison gratuite dès {new Intl.NumberFormat("fr-FR").format(BUSINESS.freeDeliveryThreshold)} {BUSINESS.currency}.
+              {currentLang === "FR" 
+                ? `Inscrivez-vous gratuitement et profitez d'une livraison rapide à Yaoundé et Douala. Frais de livraison: ${BUSINESS.deliveryFee} ${BUSINESS.currency}. Livraison gratuite dès ${new Intl.NumberFormat("fr-FR").format(BUSINESS.freeDeliveryThreshold)} ${BUSINESS.currency}.`
+                : `Sign up for free and enjoy fast delivery in Yaounde and Douala. Delivery fee: ${BUSINESS.deliveryFee} ${BUSINESS.currency}. Free delivery from ${new Intl.NumberFormat("en-US").format(BUSINESS.freeDeliveryThreshold)} ${BUSINESS.currency}.`}
             </p>
             <Link
               to="/signup"
               className="inline-flex items-center gap-2 rounded-xl bg-white px-8 py-3.5 text-sm font-semibold text-primary-700 hover:bg-primary-50 transition-all hover:shadow-lg"
             >
-              Commencer maintenant <ArrowRight className="w-4 h-4" />
+              {currentLang === "FR" ? "Commencer maintenant" : "Get started now"} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
