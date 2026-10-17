@@ -138,6 +138,9 @@ export default function ProductDetailPage({ currentLang = "FR" }: ProductDetailP
             src={produit.imageProduit}
             alt={produit.nomProduit}
             className="w-full h-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "/placeholder.jpg";
+            }}
           />
           {produit.typeProduit && (
             <div className="absolute top-4 left-4">

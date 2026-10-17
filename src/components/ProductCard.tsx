@@ -56,6 +56,9 @@ export default function ProductCard({ produit }: { produit: ProduitWithType }) {
           alt={produit.nomProduit}
           loading="lazy"
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = "/placeholder.jpg";
+          }}
         />
         {/* Name label overlay */}
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent px-3 pt-8 pb-2.5">

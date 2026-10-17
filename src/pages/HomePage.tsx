@@ -80,24 +80,41 @@ export default function HomePage({ currentLang = "FR" }: HomePageProps) {
                 </Link>
               </div>
             </div>
+            
+            {/* Grille des 4 images fixes */}
             <div className="hidden md:block relative">
               <div className="grid grid-cols-2 gap-4">
-                {featured.slice(0, 4).map((p, i) => (
-                  <div
-                    key={p.idProduit}
-                    className={`rounded-2xl overflow-hidden shadow-lg ${
-                      i % 2 === 0 ? "mt-8" : ""
-                    }`}
-                  >
-                    <img
-                      src={p.imageProduit}
-                      alt={p.nomProduit}
-                      className="w-full h-48 object-cover"
-                    />
-                  </div>
-                ))}
+                <div className="rounded-2xl overflow-hidden shadow-lg mt-8">
+                  <img
+                    src="/images/pexels-photo-4198015.jpg"
+                    alt="Poivre & Sélection"
+                    className="w-full h-48 object-cover"
+                  />
+                </div>
+                <div className="rounded-2xl overflow-hidden shadow-lg">
+                  <img
+                    src="/images/pexels-photo-4198928 (1).avif"
+                    alt="Mbongo & Mélanges"
+                    className="w-full h-48 object-cover"
+                  />
+                </div>
+                <div className="rounded-2xl overflow-hidden shadow-lg mt-8">
+                  <img
+                    src="/images/pexels-photo-4198933.avif"
+                    alt="Graines & Saveurs"
+                    className="w-full h-48 object-cover"
+                  />
+                </div>
+                <div className="rounded-2xl overflow-hidden shadow-lg">
+                  <img
+                    src="/images/pexels-photo-1340116.avif"
+                    alt="Épices Verhojust"
+                    className="w-full h-48 object-cover"
+                  />
+                </div>
               </div>
             </div>
+
           </div>
         </div>
       </section>

@@ -8,6 +8,19 @@
 import { supabase } from "../lib/supabase";
 import type { Produit, TypeProduit, ProduitWithType } from "../lib/types";
 
+const SUPABASE_STORAGE_URL = "https://uttouzsicajzcwwreqwk.supabase.co/storage/v1/object/public/produits/";
+
+/**
+ * Fonction utilitaire pour s'assurer que l'URL de l'image est complète.
+ */
+function formatImageUrl(imagePath: string | null | undefined): string {
+  if (!imagePath) return "/placeholder.jpg";
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://") || imagePath.startsWith("/")) {
+    return imagePath;
+  }
+  return `${SUPABASE_STORAGE_URL}${imagePath}`;
+}
+
 export const productService = {
   async getAllTypes(): Promise<TypeProduit[]> {
     const { data, error } = await supabase.from("typeproduit").select("*");
@@ -33,7 +46,7 @@ export const productService = {
       prixProduit: p.prix_produit,
       quantiteStockProduit: p.quantite_stock_produit,
       seuilAlertProduit: p.seuil_alert_produit,
-      imageProduit: p.image_produit,
+      imageProduit: formatImageUrl(p.image_produit),
       idTypeProduit: p.id_type_produit,
       dateAjoutProduit: p.date_ajout_produit,
       typeProduit: p.typeproduit ? {
@@ -61,7 +74,7 @@ export const productService = {
       prixProduit: data.prix_produit,
       quantiteStockProduit: data.quantite_stock_produit,
       seuilAlertProduit: data.seuil_alert_produit,
-      imageProduit: data.image_produit,
+      imageProduit: formatImageUrl(data.image_produit),
       idTypeProduit: data.id_type_produit,
       dateAjoutProduit: data.date_ajout_produit,
       typeProduit: data.typeproduit ? {
@@ -87,7 +100,7 @@ export const productService = {
       prixProduit: p.prix_produit,
       quantiteStockProduit: p.quantite_stock_produit,
       seuilAlertProduit: p.seuil_alert_produit,
-      imageProduit: p.image_produit,
+      imageProduit: formatImageUrl(p.image_produit),
       idTypeProduit: p.id_type_produit,
       dateAjoutProduit: p.date_ajout_produit,
       typeProduit: p.typeproduit ? {
@@ -113,7 +126,7 @@ export const productService = {
       prixProduit: p.prix_produit,
       quantiteStockProduit: p.quantite_stock_produit,
       seuilAlertProduit: p.seuil_alert_produit,
-      imageProduit: p.image_produit,
+      imageProduit: formatImageUrl(p.image_produit),
       idTypeProduit: p.id_type_produit,
       dateAjoutProduit: p.date_ajout_produit,
       typeProduit: p.typeproduit ? {
@@ -155,7 +168,7 @@ export const productService = {
       prixProduit: inserted.prix_produit,
       quantiteStockProduit: inserted.quantite_stock_produit,
       seuilAlertProduit: inserted.seuil_alert_produit,
-      imageProduit: inserted.image_produit,
+      imageProduit: formatImageUrl(inserted.image_produit),
       idTypeProduit: inserted.id_type_produit,
       dateAjoutProduit: inserted.date_ajout_produit,
     };
@@ -187,7 +200,7 @@ export const productService = {
       prixProduit: updated.prix_produit,
       quantiteStockProduit: updated.quantite_stock_produit,
       seuilAlertProduit: updated.seuil_alert_produit,
-      imageProduit: updated.image_produit,
+      imageProduit: formatImageUrl(updated.image_produit),
       idTypeProduit: updated.id_type_produit,
       dateAjoutProduit: updated.date_ajout_produit,
     };
@@ -214,7 +227,7 @@ export const productService = {
         prixProduit: p.prix_produit,
         quantiteStockProduit: p.quantite_stock_produit,
         seuilAlertProduit: p.seuil_alert_produit,
-        imageProduit: p.image_produit,
+        imageProduit: formatImageUrl(p.image_produit),
         idTypeProduit: p.id_type_produit,
         dateAjoutProduit: p.date_ajout_produit,
         typeProduit: p.typeproduit ? {
