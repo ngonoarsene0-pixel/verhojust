@@ -54,10 +54,18 @@ export default function CatalogPage({ currentLang = "FR" }: CatalogPageProps) {
     }
     switch (sortBy) {
       case "prix_asc":
-        result.sort((a, b) => a.prixProduit - b.prixProduit);
+        result.sort(
+          (a, b) =>
+            (a.prixBoiteProduit || a.prixKiloProduit || 0) -
+            (b.prixBoiteProduit || b.prixKiloProduit || 0)
+        );
         break;
       case "prix_desc":
-        result.sort((a, b) => b.prixProduit - a.prixProduit);
+        result.sort(
+          (a, b) =>
+            (b.prixBoiteProduit || b.prixKiloProduit || 0) -
+            (a.prixBoiteProduit || a.prixKiloProduit || 0)
+        );
         break;
       default:
         result.sort((a, b) => a.nomProduit.localeCompare(b.nomProduit));

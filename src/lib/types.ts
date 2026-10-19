@@ -20,7 +20,8 @@ export interface Produit {
   idTypeProduit: number;
   nomProduit: string;
   descriptionProduit: string;
-  prixProduit: number;
+  prixBoiteProduit: number;
+  prixKiloProduit: number;
   quantiteStockProduit: number;
   seuilAlertProduit: number;
   imageProduit: string;

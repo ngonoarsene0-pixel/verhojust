@@ -8,6 +8,8 @@ import {
   AlertTriangle,
   Check,
   Store,
+  Box,
+  Scale,
 } from "lucide-react";
 import { productService } from "../services/product.service";
 import { reviewService } from "../services/review.service";
@@ -32,6 +34,7 @@ export default function ProductDetailPage({ currentLang = "FR" }: ProductDetailP
   const [produit, setProduit] = useState<ProduitWithType | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantite, setQuantite] = useState(1);
+  const [unitType, setUnitType] = useState<"boite" | "kilo">("boite");
   const [reviews, setReviews] = useState<Avis[]>([]);
   const [newRating, setNewRating] = useState(5);
   const [newComment, setNewComment] = useState("");
@@ -43,6 +46,13 @@ export default function ProductDetailPage({ currentLang = "FR" }: ProductDetailP
       setLoading(true);
       const p = await productService.getById(Number(id));
       setProduit(p);
+      if (p) {
+        if (p.prixBoiteProduit > 0) {
+          setUnitType("boite");
+        } else if (p.prixKiloProduit > 0) {
+          setUnitType("kilo");
+        }
+      }
       const r = await reviewService.getByProduct(Number(id));
       setReviews(r);
       setReviewAuthor(user?.client?.prenomClient ? `${user.client.prenomClient} ${user.client.nomClient}` : "");
@@ -79,6 +89,8 @@ export default function ProductDetailPage({ currentLang = "FR" }: ProductDetailP
     );
   }
 
+  const activePrice = unitType === "boite" ? produit.prixBoiteProduit : produit.prixKiloProduit;
+
   const stockStatus = productService.getStockStatus(produit);
   const stockConfig = {
     rupture: {
@@ -109,8 +121,8 @@ export default function ProductDetailPage({ currentLang = "FR" }: ProductDetailP
       await addToCart(produit.idProduit, quantite);
       notify(
         currentLang === "FR"
-          ? `${quantite} × ${produit.nomProduit} ajouté au panier`
-          : `${quantite} × ${produit.nomProduit} added to cart`
+          ? `${quantite} × ${produit.nomProduit} (${unitType === "boite" ? "Boîte" : "Kg"}) ajouté au panier`
+          : `${quantite} × ${produit.nomProduit} (${unitType === "boite" ? "Box" : "Kg"}) added to cart`
       );
     } catch {
       notify(
@@ -165,9 +177,54 @@ export default function ProductDetailPage({ currentLang = "FR" }: ProductDetailP
             <span className="text-sm font-semibold">{stockConfig.label}</span>
           </div>
 
+          {/* Choix du format / conditionnement (Boîte vs Kilo) */}
+          <div className="mb-6">
+            <label className="label mb-2">
+              {currentLang === "FR" ? "Choisir le format :" : "Select format:"}
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              {produit.prixBoiteProduit > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setUnitType("boite")}
+                  className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${
+                    unitType === "boite"
+                      ? "border-primary-600 bg-primary-50/50 text-primary-900 font-semibold shadow-sm"
+                      : "border-neutral-200 hover:border-neutral-300 text-neutral-700"
+                  }`}
+                >
+                  <Box className="w-5 h-5 text-primary-600" />
+                  <div className="text-left">
+                    <p className="text-xs text-neutral-500">{currentLang === "FR" ? "Par Boîte" : "Per Box"}</p>
+                    <p className="font-bold text-sm">{formatPrice(produit.prixBoiteProduit)}</p>
+                  </div>
+                </button>
+              )}
+
+              {produit.prixKiloProduit > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setUnitType("kilo")}
+                  className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${
+                    unitType === "kilo"
+                      ? "border-amber-600 bg-amber-50/50 text-amber-900 font-semibold shadow-sm"
+                      : "border-neutral-200 hover:border-neutral-300 text-neutral-700"
+                  }`}
+                >
+                  <Scale className="w-5 h-5 text-amber-600" />
+                  <div className="text-left">
+                    <p className="text-xs text-neutral-500">{currentLang === "FR" ? "Au Kilo (Kg)" : "Per Kg"}</p>
+                    <p className="font-bold text-sm">{formatPrice(produit.prixKiloProduit)}</p>
+                  </div>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Affichage du prix total de l'option choisie */}
           <div className="mb-6">
             <p className="text-3xl font-display font-bold text-primary-700">
-              {formatPrice(produit.prixProduit)}
+              {formatPrice(activePrice)}
             </p>
           </div>
 

@@ -16,6 +16,8 @@ import {
   MapPin,
   MessageSquare,
   Send,
+  Box,
+  Scale,
 } from "lucide-react";
 import { productService } from "../services/product.service";
 import { orderService } from "../services/order.service";
@@ -481,7 +483,7 @@ export default function AdminPage({ currentLang = "FR" }: AdminPageProps) {
                   <tr>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">{currentLang === "FR" ? "Produit" : "Product"}</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase hidden md:table-cell">{currentLang === "FR" ? "Catégorie" : "Category"}</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">{currentLang === "FR" ? "Prix" : "Price"}</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">{currentLang === "FR" ? "Prix (Boîte / Kilo)" : "Price (Box / Kg)"}</th>
                     <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">Stock</th>
                     <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">Actions</th>
                   </tr>
@@ -501,8 +503,20 @@ export default function AdminPage({ currentLang = "FR" }: AdminPageProps) {
                       <td className="px-4 py-3 text-sm text-neutral-600 hidden md:table-cell">
                         {p.typeProduit?.nomTypeProduit}
                       </td>
-                      <td className="px-4 py-3 text-right text-sm font-semibold text-neutral-900">
-                        {formatPrice(p.prixProduit)}
+                      <td className="px-4 py-3 text-right text-xs">
+                        {p.prixBoiteProduit > 0 && (
+                          <div className="text-neutral-900 font-semibold">
+                            <span className="text-[10px] text-primary-600 uppercase">Boîte:</span> {formatPrice(p.prixBoiteProduit)}
+                          </div>
+                        )}
+                        {p.prixKiloProduit > 0 && (
+                          <div className="text-neutral-600">
+                            <span className="text-[10px] text-amber-600 uppercase">Kg:</span> {formatPrice(p.prixKiloProduit)}
+                          </div>
+                        )}
+                        {p.prixBoiteProduit === 0 && p.prixKiloProduit === 0 && (
+                          <span className="text-neutral-400">Non défini</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <span className={`badge ${
@@ -852,7 +866,8 @@ function ProductFormModal({
   const [form, setForm] = useState({
     nomProduit: product?.nomProduit ?? "",
     descriptionProduit: product?.descriptionProduit ?? "",
-    prixProduit: product?.prixProduit ?? 0,
+    prixBoiteProduit: product?.prixBoiteProduit ?? 0,
+    prixKiloProduit: product?.prixKiloProduit ?? 0,
     quantiteStockProduit: product?.quantiteStockProduit ?? 0,
     seuilAlertProduit: product?.seuilAlertProduit ?? 10,
     imageProduit: product?.imageProduit ?? "",
@@ -932,20 +947,38 @@ function ProductFormModal({
               </div>
             )}
           </div>
+
+          {/* Prix Boîte et Prix Kilo */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">
-                {currentLang === "FR" ? "Prix (FCFA)" : "Price (FCFA)"}
+              <label className="label flex items-center gap-1.5 text-primary-700">
+                <Box className="w-4 h-4" /> {currentLang === "FR" ? "Prix Boîte (FCFA)" : "Box Price"}
               </label>
               <input
                 type="number"
                 required
                 min={0}
-                value={form.prixProduit}
-                onChange={(e) => update("prixProduit", Number(e.target.value))}
+                value={form.prixBoiteProduit}
+                onChange={(e) => update("prixBoiteProduit", Number(e.target.value))}
                 className="input"
               />
             </div>
+            <div>
+              <label className="label flex items-center gap-1.5 text-amber-700">
+                <Scale className="w-4 h-4" /> {currentLang === "FR" ? "Prix Kilo (FCFA)" : "Kg Price"}
+              </label>
+              <input
+                type="number"
+                required
+                min={0}
+                value={form.prixKiloProduit}
+                onChange={(e) => update("prixKiloProduit", Number(e.target.value))}
+                className="input"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="label">
                 {currentLang === "FR" ? "Catégorie" : "Category"}
@@ -962,8 +995,6 @@ function ProductFormModal({
                 ))}
               </select>
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="label">Stock</label>
               <input
@@ -975,6 +1006,9 @@ function ProductFormModal({
                 className="input"
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="label">
                 {currentLang === "FR" ? "Seuil d'alerte" : "Alert Threshold"}
@@ -988,20 +1022,21 @@ function ProductFormModal({
                 className="input"
               />
             </div>
+            <div>
+              <label className="label">
+                {currentLang === "FR" ? "Statut" : "Status"}
+              </label>
+              <select
+                value={form.statutProduit}
+                onChange={(e) => update("statutProduit", e.target.value)}
+                className="input"
+              >
+                <option value="actif">{currentLang === "FR" ? "Actif" : "Active"}</option>
+                <option value="inactif">{currentLang === "FR" ? "Inactif" : "Inactive"}</option>
+              </select>
+            </div>
           </div>
-          <div>
-            <label className="label">
-              {currentLang === "FR" ? "Statut" : "Status"}
-            </label>
-            <select
-              value={form.statutProduit}
-              onChange={(e) => update("statutProduit", e.target.value)}
-              className="input"
-            >
-              <option value="actif">{currentLang === "FR" ? "Actif" : "Active"}</option>
-              <option value="inactif">{currentLang === "FR" ? "Inactif" : "Inactive"}</option>
-            </select>
-          </div>
+
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="btn-secondary flex-1">
               {currentLang === "FR" ? "Annuler" : "Cancel"}

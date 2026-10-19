@@ -43,7 +43,8 @@ export const productService = {
       idProduit: p.id_produit,
       nomProduit: p.nom_produit,
       descriptionProduit: p.description_produit,
-      prixProduit: p.prix_produit,
+      prixBoiteProduit: p.prix_boite_produit ?? 0,
+      prixKiloProduit: p.prix_kilo_produit ?? 0,
       quantiteStockProduit: p.quantite_stock_produit,
       seuilAlertProduit: p.seuil_alert_produit,
       imageProduit: formatImageUrl(p.image_produit),
@@ -71,7 +72,8 @@ export const productService = {
       idProduit: data.id_produit,
       nomProduit: data.nom_produit,
       descriptionProduit: data.description_produit,
-      prixProduit: data.prix_produit,
+      prixBoiteProduit: data.prix_boite_produit ?? 0,
+      prixKiloProduit: data.prix_kilo_produit ?? 0,
       quantiteStockProduit: data.quantite_stock_produit,
       seuilAlertProduit: data.seuil_alert_produit,
       imageProduit: formatImageUrl(data.image_produit),
@@ -97,7 +99,8 @@ export const productService = {
       idProduit: p.id_produit,
       nomProduit: p.nom_produit,
       descriptionProduit: p.description_produit,
-      prixProduit: p.prix_produit,
+      prixBoiteProduit: p.prix_boite_produit ?? 0,
+      prixKiloProduit: p.prix_kilo_produit ?? 0,
       quantiteStockProduit: p.quantite_stock_produit,
       seuilAlertProduit: p.seuil_alert_produit,
       imageProduit: formatImageUrl(p.image_produit),
@@ -123,7 +126,8 @@ export const productService = {
       idProduit: p.id_produit,
       nomProduit: p.nom_produit,
       descriptionProduit: p.description_produit,
-      prixProduit: p.prix_produit,
+      prixBoiteProduit: p.prix_boite_produit ?? 0,
+      prixKiloProduit: p.prix_kilo_produit ?? 0,
       quantiteStockProduit: p.quantite_stock_produit,
       seuilAlertProduit: p.seuil_alert_produit,
       imageProduit: formatImageUrl(p.image_produit),
@@ -150,7 +154,8 @@ export const productService = {
       .insert({
         nom_produit: data.nomProduit,
         description_produit: data.descriptionProduit,
-        prix_produit: data.prixProduit,
+        prix_boite_produit: data.prixBoiteProduit,
+        prix_kilo_produit: data.prixKiloProduit,
         quantite_stock_produit: data.quantiteStockProduit,
         seuil_alert_produit: data.seuilAlertProduit,
         image_produit: data.imageProduit,
@@ -165,7 +170,8 @@ export const productService = {
       idProduit: inserted.id_produit,
       nomProduit: inserted.nom_produit,
       descriptionProduit: inserted.description_produit,
-      prixProduit: inserted.prix_produit,
+      prixBoiteProduit: inserted.prix_boite_produit ?? 0,
+      prixKiloProduit: inserted.prix_kilo_produit ?? 0,
       quantiteStockProduit: inserted.quantite_stock_produit,
       seuilAlertProduit: inserted.seuil_alert_produit,
       imageProduit: formatImageUrl(inserted.image_produit),
@@ -178,7 +184,8 @@ export const productService = {
     const updatePayload: any = {};
     if (data.nomProduit !== undefined) updatePayload.nom_produit = data.nomProduit;
     if (data.descriptionProduit !== undefined) updatePayload.description_produit = data.descriptionProduit;
-    if (data.prixProduit !== undefined) updatePayload.prix_produit = data.prixProduit;
+    if (data.prixBoiteProduit !== undefined) updatePayload.prix_boite_produit = data.prixBoiteProduit;
+    if (data.prixKiloProduit !== undefined) updatePayload.prix_kilo_produit = data.prixKiloProduit;
     if (data.quantiteStockProduit !== undefined) updatePayload.quantite_stock_produit = data.quantiteStockProduit;
     if (data.seuilAlertProduit !== undefined) updatePayload.seuil_alert_produit = data.seuilAlertProduit;
     if (data.imageProduit !== undefined) updatePayload.image_produit = data.imageProduit;
@@ -197,7 +204,8 @@ export const productService = {
       idProduit: updated.id_produit,
       nomProduit: updated.nom_produit,
       descriptionProduit: updated.description_produit,
-      prixProduit: updated.prix_produit,
+      prixBoiteProduit: updated.prix_boite_produit ?? 0,
+      prixKiloProduit: updated.prix_kilo_produit ?? 0,
       quantiteStockProduit: updated.quantite_stock_produit,
       seuilAlertProduit: updated.seuil_alert_produit,
       imageProduit: formatImageUrl(updated.image_produit),
@@ -224,7 +232,8 @@ export const productService = {
         idProduit: p.id_produit,
         nomProduit: p.nom_produit,
         descriptionProduit: p.description_produit,
-        prixProduit: p.prix_produit,
+        prixBoiteProduit: p.prix_boite_produit ?? 0,
+        prixKiloProduit: p.prix_kilo_produit ?? 0,
         quantiteStockProduit: p.quantite_stock_produit,
         seuilAlertProduit: p.seuil_alert_produit,
         imageProduit: formatImageUrl(p.image_produit),

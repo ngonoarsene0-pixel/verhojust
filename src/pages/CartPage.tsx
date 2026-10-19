@@ -76,69 +76,72 @@ export default function CartPage({ currentLang = "FR" }: CartPageProps) {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Items */}
         <div className="lg:col-span-2 space-y-3">
-          {items.map((item) => (
-            <div
-              key={item.produit.idProduit}
-              className="card p-4 flex gap-4 items-center"
-            >
-              <Link
-                to={`/produit/${item.produit.idProduit}`}
-                className="shrink-0"
+          {items.map((item) => {
+            const price = item.produit.prixBoiteProduit || item.produit.prixKiloProduit || 0;
+            return (
+              <div
+                key={item.produit.idProduit}
+                className="card p-4 flex gap-4 items-center"
               >
-                <img
-                  src={item.produit.imageProduit}
-                  alt={item.produit.nomProduit}
-                  className="w-20 h-20 rounded-xl object-cover"
-                />
-              </Link>
-              <div className="flex-1 min-w-0">
                 <Link
                   to={`/produit/${item.produit.idProduit}`}
-                  className="font-semibold text-sm text-neutral-900 hover:text-primary-700 line-clamp-1"
+                  className="shrink-0"
                 >
-                  {item.produit.nomProduit}
+                  <img
+                    src={item.produit.imageProduit}
+                    alt={item.produit.nomProduit}
+                    className="w-20 h-20 rounded-xl object-cover"
+                  />
                 </Link>
-                <p className="text-sm text-neutral-500 mb-2">
-                  {formatPrice(item.produit.prixProduit)} / {currentLang === "FR" ? "unité" : "unit"}
-                </p>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center border border-neutral-300 rounded-lg overflow-hidden">
+                <div className="flex-1 min-w-0">
+                  <Link
+                    to={`/produit/${item.produit.idProduit}`}
+                    className="font-semibold text-sm text-neutral-900 hover:text-primary-700 line-clamp-1"
+                  >
+                    {item.produit.nomProduit}
+                  </Link>
+                  <p className="text-sm text-neutral-500 mb-2">
+                    {formatPrice(price)} / {currentLang === "FR" ? "unité" : "unit"}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center border border-neutral-300 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() =>
+                          updateQuantity(item.produit.idProduit, item.quantiteProduit - 1)
+                        }
+                        className="p-1.5 hover:bg-neutral-100 transition-colors"
+                      >
+                        <Minus className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="px-3 py-1.5 text-sm font-semibold min-w-[2.5rem] text-center">
+                        {item.quantiteProduit}
+                      </span>
+                      <button
+                        onClick={() =>
+                          updateQuantity(item.produit.idProduit, item.quantiteProduit + 1)
+                        }
+                        disabled={item.quantiteProduit >= item.produit.quantiteStockProduit}
+                        className="p-1.5 hover:bg-neutral-100 transition-colors disabled:opacity-40"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                     <button
-                      onClick={() =>
-                        updateQuantity(item.produit.idProduit, item.quantiteProduit - 1)
-                      }
-                      className="p-1.5 hover:bg-neutral-100 transition-colors"
+                      onClick={() => removeFromCart(item.produit.idProduit)}
+                      className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     >
-                      <Minus className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="px-3 py-1.5 text-sm font-semibold min-w-[2.5rem] text-center">
-                      {item.quantiteProduit}
-                    </span>
-                    <button
-                      onClick={() =>
-                        updateQuantity(item.produit.idProduit, item.quantiteProduit + 1)
-                      }
-                      disabled={item.quantiteProduit >= item.produit.quantiteStockProduit}
-                      className="p-1.5 hover:bg-neutral-100 transition-colors disabled:opacity-40"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                  <button
-                    onClick={() => removeFromCart(item.produit.idProduit)}
-                    className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="font-display font-bold text-lg text-primary-700">
+                    {formatPrice(price * item.quantiteProduit)}
+                  </p>
                 </div>
               </div>
-              <div className="text-right shrink-0">
-                <p className="font-display font-bold text-lg text-primary-700">
-                  {formatPrice(item.produit.prixProduit * item.quantiteProduit)}
-                </p>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Summary */}
