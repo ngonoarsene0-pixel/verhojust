@@ -85,36 +85,61 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
     setProcessing(true);
     try {
       const clientId = user?.client.idClient ?? 0;
-      
-      // Si le client choisit Mobile Money ou Carte, on initialise le paiement Notch Pay
+      const transactionId = "CMD_" + Date.now();
+
+      // Si le client choisit Mobile Money ou Carte, on lance le SDK Notch Pay (Pop-up)
       if (modePaiement === "mobile_money" || modePaiement === "carte") {
-        const transactionId = "CMD_" + Date.now();
-        
         const paymentResponse = await notchPayService.initiatePayment({
           amount: grandTotal,
           currency: "XAF",
           email: `${guestPrenom.toLowerCase()}.${guestNom.toLowerCase()}@client.local`,
           name: `${guestPrenom} ${guestNom}`,
           phone: telephone,
-          description: `Commande Verojust - ${items.length} article(s)`,
+          description: `Commande Verhojust - ${items.length} article(s)`,
           reference: transactionId,
           callback_url: window.location.href,
         });
 
-        if (paymentResponse.success && paymentResponse.payment_url) {
-          window.location.href = paymentResponse.payment_url;
-          return;
+        if (paymentResponse.success) {
+          // Une fois le paiement validé via le pop-up Notch Pay, on crée la commande en base
+          const commande = await orderService.createOrder({
+            idClient: clientId,
+            adresseLivraisonCommande: `${adresse}, ${ville}`,
+            modePaiementCommande: modePaiement,
+            items,
+            guestInfo: {
+              nom: guestNom,
+              prenom: guestPrenom,
+              email: `${guestPrenom.toLowerCase()}.${guestNom.toLowerCase()}@client.local`,
+              telephone,
+            },
+          });
+
+          await orderService.finalizeSale(commande.idCommande, modePaiement);
+          await deliveryService.createDelivery(
+            commande.idCommande,
+            `${adresse}, ${ville}`
+          );
+
+          await clearCart();
+          setCompletedOrder(commande);
+          setStep(3);
+          notify(
+            currentLang === "FR"
+              ? "Paiement réussi et commande validée !"
+              : "Payment successful and order confirmed!"
+          );
         } else {
           notify(
             paymentResponse.message ||
               (currentLang === "FR"
-                ? "Erreur lors de l'initialisation du paiement"
-                : "Error initiating payment"),
+                ? "Paiement annulé ou échoué"
+                : "Payment cancelled or failed"),
             "error"
           );
-          setProcessing(false);
-          return;
         }
+        setProcessing(false);
+        return;
       }
 
       // Si c'est "especes" (paiement à la livraison)
@@ -123,11 +148,11 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
         adresseLivraisonCommande: `${adresse}, ${ville}`,
         modePaiementCommande: modePaiement,
         items,
-        guestInfo: { 
-          nom: guestNom, 
-          prenom: guestPrenom, 
-          email: `${guestPrenom.toLowerCase()}.${guestNom.toLowerCase()}@client.local`, 
-          telephone 
+        guestInfo: {
+          nom: guestNom,
+          prenom: guestPrenom,
+          email: `${guestPrenom.toLowerCase()}.${guestNom.toLowerCase()}@client.local`,
+          telephone,
         },
       });
 
@@ -145,7 +170,8 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
           ? "Votre commande est en cours de traitement !"
           : "Your order is being processed!"
       );
-    } catch {
+    } catch (error) {
+      console.error(error);
       notify(
         currentLang === "FR"
           ? "Erreur lors de la création de la commande"
@@ -171,14 +197,26 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
           `Client : ${fullName} (${telephone})\n` +
           `Adresse : ${adresse}, ${ville}\n` +
           `Montant Total : ${formatPrice(grandTotal)}\n` +
-          `Paiement : ${modePaiement === "mobile_money" ? "Mobile Money" : modePaiement === "especes" ? "Espèces à la livraison" : "Carte bancaire"}`
+          `Paiement : ${
+            modePaiement === "mobile_money"
+              ? "Mobile Money"
+              : modePaiement === "especes"
+              ? "Espèces à la livraison"
+              : "Carte bancaire"
+          }`
         : `🔔 ORDER ALERT\n\n` +
           `Status : Your order is being processed\n` +
           `Reference : ${completedOrder.referenceCommande}\n` +
           `Customer : ${fullName} (${telephone})\n` +
           `Address : ${adresse}, ${ville}\n` +
           `Total Amount : ${formatPrice(grandTotal)}\n` +
-          `Payment : ${modePaiement === "mobile_money" ? "Mobile Money" : modePaiement === "especes" ? "Cash on delivery" : "Credit Card"}`
+          `Payment : ${
+            modePaiement === "mobile_money"
+              ? "Mobile Money"
+              : modePaiement === "especes"
+              ? "Cash on delivery"
+              : "Credit Card"
+          }`
     );
     window.open(`https://wa.me/${adminPhone}?text=${message}`, "_blank");
   };
