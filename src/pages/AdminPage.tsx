@@ -483,73 +483,76 @@ export default function AdminPage({ currentLang = "FR" }: AdminPageProps) {
                   <tr>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">{currentLang === "FR" ? "Produit" : "Product"}</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase hidden md:table-cell">{currentLang === "FR" ? "Catégorie" : "Category"}</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">{currentLang === "FR" ? "Prix (Boîte / Kilo)" : "Price (Box / Kg)"}</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">{currentLang === "FR" ? "Prix (Détail / Kilo)" : "Price (Detail / Kg)"}</th>
                     <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">Stock</th>
                     <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
-                  {products.map((p) => (
-                    <tr key={p.idProduit} className="hover:bg-neutral-50">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <img src={p.imageProduit} alt={p.nomProduit} className="w-10 h-10 rounded-lg object-cover" />
-                          <div>
-                            <p className="text-sm font-medium text-neutral-900">{p.nomProduit}</p>
-                            <p className="text-xs text-neutral-500 md:hidden">{p.typeProduit?.nomTypeProduit}</p>
+                  {products.map((p) => {
+                    const uniteDetail = p.uniteDetailProduit || "Détail";
+                    return (
+                      <tr key={p.idProduit} className="hover:bg-neutral-50">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <img src={p.imageProduit} alt={p.nomProduit} className="w-10 h-10 rounded-lg object-cover" />
+                            <div>
+                              <p className="text-sm font-medium text-neutral-900">{p.nomProduit}</p>
+                              <p className="text-xs text-neutral-500 md:hidden">{p.typeProduit?.nomTypeProduit}</p>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-neutral-600 hidden md:table-cell">
-                        {p.typeProduit?.nomTypeProduit}
-                      </td>
-                      <td className="px-4 py-3 text-right text-xs">
-                        {p.prixBoiteProduit > 0 && (
-                          <div className="text-neutral-900 font-semibold">
-                            <span className="text-[10px] text-primary-600 uppercase">Boîte:</span> {formatPrice(p.prixBoiteProduit)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-neutral-600 hidden md:table-cell">
+                          {p.typeProduit?.nomTypeProduit}
+                        </td>
+                        <td className="px-4 py-3 text-right text-xs">
+                          {p.prixBoiteProduit > 0 && (
+                            <div className="text-neutral-900 font-semibold">
+                              <span className="text-[10px] text-primary-600 uppercase">{uniteDetail}:</span> {formatPrice(p.prixBoiteProduit)}
+                            </div>
+                          )}
+                          {p.prixKiloProduit > 0 && (
+                            <div className="text-neutral-600">
+                              <span className="text-[10px] text-amber-600 uppercase">Kg:</span> {formatPrice(p.prixKiloProduit)}
+                            </div>
+                          )}
+                          {p.prixBoiteProduit === 0 && p.prixKiloProduit === 0 && (
+                            <span className="text-neutral-400">Non défini</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <span className={`badge ${
+                            p.quantiteStockProduit === 0
+                              ? "bg-red-100 text-red-700"
+                              : p.quantiteStockProduit <= p.seuilAlertProduit
+                              ? "bg-accent-100 text-accent-700"
+                              : "bg-emerald-100 text-emerald-700"
+                          }`}>
+                            {p.quantiteStockProduit}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => {
+                                setEditingProduct(p);
+                                setShowForm(true);
+                              }}
+                              className="p-2 rounded-lg hover:bg-primary-50 text-primary-600 transition-colors"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteProduct(p.idProduit)}
+                              className="p-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
-                        )}
-                        {p.prixKiloProduit > 0 && (
-                          <div className="text-neutral-600">
-                            <span className="text-[10px] text-amber-600 uppercase">Kg:</span> {formatPrice(p.prixKiloProduit)}
-                          </div>
-                        )}
-                        {p.prixBoiteProduit === 0 && p.prixKiloProduit === 0 && (
-                          <span className="text-neutral-400">Non défini</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <span className={`badge ${
-                          p.quantiteStockProduit === 0
-                            ? "bg-red-100 text-red-700"
-                            : p.quantiteStockProduit <= p.seuilAlertProduit
-                            ? "bg-accent-100 text-accent-700"
-                            : "bg-emerald-100 text-emerald-700"
-                        }`}>
-                          {p.quantiteStockProduit}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => {
-                              setEditingProduct(p);
-                              setShowForm(true);
-                            }}
-                            className="p-2 rounded-lg hover:bg-primary-50 text-primary-600 transition-colors"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteProduct(p.idProduit)}
-                            className="p-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -868,6 +871,7 @@ function ProductFormModal({
     descriptionProduit: product?.descriptionProduit ?? "",
     prixBoiteProduit: product?.prixBoiteProduit ?? 0,
     prixKiloProduit: product?.prixKiloProduit ?? 0,
+    uniteDetailProduit: product?.uniteDetailProduit ?? "100g",
     quantiteStockProduit: product?.quantiteStockProduit ?? 0,
     seuilAlertProduit: product?.seuilAlertProduit ?? 10,
     imageProduit: product?.imageProduit ?? "",
@@ -948,11 +952,25 @@ function ProductFormModal({
             )}
           </div>
 
-          {/* Prix Boîte et Prix Kilo */}
+          {/* Unité de détail personnalisée (ex: 100g, 50g, 1L...) */}
+          <div>
+            <label className="label">
+              {currentLang === "FR" ? "Unité de détail personnalisée (ex: 100g, 50g, 1L)" : "Custom detail unit (e.g. 100g, 50g, 1L)"}
+            </label>
+            <input
+              required
+              value={form.uniteDetailProduit}
+              onChange={(e) => update("uniteDetailProduit", e.target.value)}
+              placeholder="100g"
+              className="input"
+            />
+          </div>
+
+          {/* Prix Détail et Prix Kilo */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="label flex items-center gap-1.5 text-primary-700">
-                <Box className="w-4 h-4" /> {currentLang === "FR" ? "Prix Boîte (FCFA)" : "Box Price"}
+                <Box className="w-4 h-4" /> {currentLang === "FR" ? `Prix ${form.uniteDetailProduit || "Détail"} (FCFA)` : "Detail Price"}
               </label>
               <input
                 type="number"

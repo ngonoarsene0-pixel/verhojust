@@ -78,21 +78,18 @@ export default function CartPage({ currentLang = "FR" }: CartPageProps) {
         <div className="lg:col-span-2 space-y-3">
           {items.map((item) => {
             const isKilo = item.typeAchat === "kilo";
+            const uniteDetail = item.produit.uniteDetailProduit || "Détail";
+            
             const price = isKilo
               ? (item.produit.prixKiloProduit || 0)
               : (item.produit.prixBoiteProduit || 0);
 
-            const unitLabel = isKilo
-              ? (currentLang === "FR" ? "kg" : "kg")
-              : (currentLang === "FR" ? "boîte" : "box");
-
-            const badgeLabel = isKilo
-              ? "Kg"
-              : (currentLang === "FR" ? "Boîte" : "Box");
+            const unitLabel = isKilo ? "kg" : uniteDetail;
+            const badgeLabel = isKilo ? "Kg" : uniteDetail;
 
             return (
               <div
-                key={`${item.produit.idProduit}-${item.typeAchat || "boite"}`}
+                key={`${item.produit.idProduit}-${item.typeAchat || uniteDetail}`}
                 className="card p-4 flex gap-4 items-center"
               >
                 <Link

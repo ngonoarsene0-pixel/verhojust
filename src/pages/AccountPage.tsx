@@ -275,29 +275,42 @@ export default function AccountPage({ currentLang = "FR" }: AccountPageProps) {
                       {currentLang === "FR" ? "Articles commandés" : "Ordered Items"}
                     </h4>
                     <div className="space-y-2">
-                      {order.lignes?.map((ligne) => (
-                        <div
-                          key={ligne.idLigneCommande}
-                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-neutral-50"
-                        >
-                          <img
-                            src={ligne.produit?.imageProduit}
-                            alt={ligne.produit?.nomProduit}
-                            className="w-10 h-10 rounded-lg object-cover"
-                          />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-neutral-900">
-                              {ligne.produit?.nomProduit}
-                            </p>
-                            <p className="text-xs text-neutral-500">
-                              {ligne.quantiteProduit} × {formatPrice(ligne.prixUnitaire)}
+                      {order.lignes?.map((ligne) => {
+                        const uniteDetail = ligne.produit?.uniteDetailProduit || "Détail";
+                        const isKilo = ligne.prixUnitaire === ligne.produit?.prixKiloProduit;
+                        const unitLabel = isKilo ? "kg" : uniteDetail;
+
+                        return (
+                          <div
+                            key={ligne.idLigneCommande}
+                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-neutral-50"
+                          >
+                            <img
+                              src={ligne.produit?.imageProduit}
+                              alt={ligne.produit?.nomProduit}
+                              className="w-10 h-10 rounded-lg object-cover"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium text-neutral-900 truncate">
+                                  {ligne.produit?.nomProduit}
+                                </p>
+                                <span className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded ${
+                                  isKilo ? "bg-amber-100 text-amber-800" : "bg-primary-100 text-primary-800"
+                                }`}>
+                                  {unitLabel}
+                                </span>
+                              </div>
+                              <p className="text-xs text-neutral-500">
+                                {ligne.quantiteProduit} {unitLabel} × {formatPrice(ligne.prixUnitaire)}
+                              </p>
+                            </div>
+                            <p className="text-sm font-semibold text-neutral-900">
+                              {formatPrice(ligne.prixUnitaire * ligne.quantiteProduit)}
                             </p>
                           </div>
-                          <p className="text-sm font-semibold text-neutral-900">
-                            {formatPrice(ligne.prixUnitaire * ligne.quantiteProduit)}
-                          </p>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     <div className="border-t border-neutral-100 mt-4 pt-4 flex justify-between text-sm">

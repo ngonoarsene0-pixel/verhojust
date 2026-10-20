@@ -1,9 +1,9 @@
-// src/pages/CheckoutPage.tsx
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Check,
   ChevronRight,
+  ChevronLeft,
   MapPin,
   CreditCard,
   PackageCheck,
@@ -33,6 +33,7 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
   const { items, totalAmount, clearCart } = useCart();
   const { user } = useAuth();
   const { notify } = useToast();
+  const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
   const [processing, setProcessing] = useState(false);
@@ -83,12 +84,14 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
 
   const handlePlaceOrder = async () => {
     setProcessing(true);
-    try {
-      const clientId = user?.client.idClient ?? 0;
-      const transactionId = "CMD_" + Date.now();
+    const clientId = user?.client.idClient ?? 0;
+    const transactionId = "CMD_" + Date.now();
 
-      // Si le client choisit Mobile Money ou Carte, on lance le SDK Notch Pay (Pop-up)
-      if (modePaiement === "mobile_money" || modePaiement === "carte") {
+    let finalPaymentMode = modePaiement;
+
+    // Si le client choisit Mobile Money ou Carte, on tente d'abord Notch Pay
+    if (modePaiement === "mobile_money" || modePaiement === "carte") {
+      try {
         const paymentResponse = await notchPayService.initiatePayment({
           amount: grandTotal,
           currency: "XAF",
@@ -100,53 +103,31 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
           callback_url: window.location.href,
         });
 
-        if (paymentResponse.success) {
-          // Une fois le paiement validé via le pop-up Notch Pay, on crée la commande en base
-          const commande = await orderService.createOrder({
-            idClient: clientId,
-            adresseLivraisonCommande: `${adresse}, ${ville}`,
-            modePaiementCommande: modePaiement,
-            items,
-            guestInfo: {
-              nom: guestNom,
-              prenom: guestPrenom,
-              email: `${guestPrenom.toLowerCase()}.${guestNom.toLowerCase()}@client.local`,
-              telephone,
-            },
-          });
-
-          await orderService.finalizeSale(commande.idCommande, modePaiement);
-          await deliveryService.createDelivery(
-            commande.idCommande,
-            `${adresse}, ${ville}`
-          );
-
-          await clearCart();
-          setCompletedOrder(commande);
-          setStep(3);
+        if (!paymentResponse.success) {
           notify(
             currentLang === "FR"
-              ? "Paiement réussi et commande validée !"
-              : "Payment successful and order confirmed!"
+              ? "Guichet en ligne indisponible. Basculement automatique vers le paiement à la livraison."
+              : "Online payment unavailable. Automatically switching to cash on delivery."
           );
-        } else {
-          notify(
-            paymentResponse.message ||
-              (currentLang === "FR"
-                ? "Paiement annulé ou échoué"
-                : "Payment cancelled or failed"),
-            "error"
-          );
+          finalPaymentMode = "especes";
         }
-        setProcessing(false);
-        return;
+      } catch (err) {
+        console.warn("Échec NotchPay, basculement automatique sur espèces :", err);
+        notify(
+          currentLang === "FR"
+            ? "Problème de connexion au guichet en ligne. Votre commande est enregistrée en espèces à la livraison."
+            : "Online gateway error. Order confirmed with Cash on Delivery."
+        );
+        finalPaymentMode = "especes";
       }
+    }
 
-      // Si c'est "especes" (paiement à la livraison)
+    // Création garantie de la commande en BDD (Mobile Money validé ou basculé en espèces)
+    try {
       const commande = await orderService.createOrder({
         idClient: clientId,
         adresseLivraisonCommande: `${adresse}, ${ville}`,
-        modePaiementCommande: modePaiement,
+        modePaiementCommande: finalPaymentMode,
         items,
         guestInfo: {
           nom: guestNom,
@@ -156,7 +137,7 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
         },
       });
 
-      await orderService.finalizeSale(commande.idCommande, modePaiement);
+      await orderService.finalizeSale(commande.idCommande, finalPaymentMode);
       await deliveryService.createDelivery(
         commande.idCommande,
         `${adresse}, ${ville}`
@@ -165,11 +146,20 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
       await clearCart();
       setCompletedOrder(commande);
       setStep(3);
-      notify(
-        currentLang === "FR"
-          ? "Votre commande est en cours de traitement !"
-          : "Your order is being processed!"
-      );
+
+      if (finalPaymentMode === "especes" && modePaiement !== "especes") {
+        notify(
+          currentLang === "FR"
+            ? "Commande enregistrée avec succès ! Vous réglerez en espèces à la livraison."
+            : "Order recorded! You will pay cash on delivery."
+        );
+      } else {
+        notify(
+          currentLang === "FR"
+            ? "Votre commande est en cours de traitement !"
+            : "Your order is being processed!"
+        );
+      }
     } catch (error) {
       console.error(error);
       notify(
@@ -198,9 +188,9 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
           `Adresse : ${adresse}, ${ville}\n` +
           `Montant Total : ${formatPrice(grandTotal)}\n` +
           `Paiement : ${
-            modePaiement === "mobile_money"
+            completedOrder.modePaiementCommande === "mobile_money"
               ? "Mobile Money"
-              : modePaiement === "especes"
+              : completedOrder.modePaiementCommande === "especes"
               ? "Espèces à la livraison"
               : "Carte bancaire"
           }`
@@ -211,9 +201,9 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
           `Address : ${adresse}, ${ville}\n` +
           `Total Amount : ${formatPrice(grandTotal)}\n` +
           `Payment : ${
-            modePaiement === "mobile_money"
+            completedOrder.modePaiementCommande === "mobile_money"
               ? "Mobile Money"
-              : modePaiement === "especes"
+              : completedOrder.modePaiementCommande === "especes"
               ? "Cash on delivery"
               : "Credit Card"
           }`
@@ -257,10 +247,16 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
       <div className="flex items-center justify-center mb-10">
         {STEPS.map((s, i) => (
           <div key={s.id} className="flex items-center">
-            <div
-              className={`flex items-center gap-2.5 ${
-                step >= s.id ? "text-primary-700" : "text-neutral-400"
-              }`}
+            <button
+              onClick={() => {
+                if (s.id < step && step !== 3) {
+                  setStep(s.id);
+                }
+              }}
+              disabled={s.id >= step || step === 3}
+              className={`flex items-center gap-2.5 transition-all ${
+                s.id < step && step !== 3 ? "cursor-pointer hover:opacity-80" : "cursor-default"
+              } ${step >= s.id ? "text-primary-700" : "text-neutral-400"}`}
             >
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
@@ -278,7 +274,7 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
                 )}
               </div>
               <span className="text-sm font-semibold hidden sm:inline">{s.label}</span>
-            </div>
+            </button>
             {i < STEPS.length - 1 && (
               <div
                 className={`w-12 sm:w-20 h-0.5 mx-2 sm:mx-3 rounded ${
@@ -293,11 +289,20 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
       {step === 1 && (
         <div className="grid md:grid-cols-2 gap-8 animate-fade-in">
           <div className="card p-6">
-            <h2 className="font-display font-bold text-lg text-neutral-900 mb-4">
-              {currentLang === "FR" ? "Informations de livraison" : "Delivery Information"}
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display font-bold text-lg text-neutral-900">
+                {currentLang === "FR" ? "Informations de livraison" : "Delivery Information"}
+              </h2>
+              <button
+                onClick={() => navigate("/panier")}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-600 hover:text-primary-600 bg-neutral-100 hover:bg-primary-50 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>{currentLang === "FR" ? "Retour au panier" : "Back to cart"}</span>
+              </button>
+            </div>
+
             <div className="space-y-4">
-              {/* Prénom et Nom */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label">{currentLang === "FR" ? "Prénom" : "First Name"}</label>
@@ -326,7 +331,6 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
                 </div>
               </div>
 
-              {/* Adresse complète */}
               <div>
                 <label className="label">{currentLang === "FR" ? "Adresse complète" : "Full Address"}</label>
                 <input
@@ -339,7 +343,6 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
                 />
               </div>
 
-              {/* Ville */}
               <div>
                 <label className="label">{currentLang === "FR" ? "Ville" : "City"}</label>
                 <input
@@ -351,7 +354,6 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
                 />
               </div>
 
-              {/* Téléphone */}
               <div>
                 <label className="label">{currentLang === "FR" ? "Téléphone" : "Phone"}</label>
                 <div className="relative">
@@ -384,14 +386,15 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
             <div className="space-y-3 max-h-64 overflow-y-auto">
               {items.map((item) => {
                 const isKilo = item.typeAchat === "kilo";
+                const uniteDetail = item.produit.uniteDetailProduit || "Détail";
                 const unitPrice = isKilo
                   ? (item.produit.prixKiloProduit || 0)
                   : (item.produit.prixBoiteProduit || 0);
-                const unitLabel = isKilo ? "kg" : (currentLang === "FR" ? "boîte" : "box");
-                const badgeLabel = isKilo ? "Kg" : (currentLang === "FR" ? "Boîte" : "Box");
+                const unitLabel = isKilo ? "kg" : uniteDetail;
+                const badgeLabel = isKilo ? "Kg" : uniteDetail;
 
                 return (
-                  <div key={`${item.produit.idProduit}-${item.typeAchat || "boite"}`} className="flex gap-3 items-center">
+                  <div key={`${item.produit.idProduit}-${item.typeAchat || uniteDetail}`} className="flex gap-3 items-center">
                     <img
                       src={item.produit.imageProduit}
                       alt={item.produit.nomProduit}
@@ -499,8 +502,9 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
               ))}
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setStep(1)} className="btn-secondary flex-1">
-                {currentLang === "FR" ? "Retour" : "Back"}
+              <button onClick={() => setStep(1)} className="btn-secondary flex-1 inline-flex items-center justify-center gap-1.5">
+                <ChevronLeft className="w-4 h-4" />
+                <span>{currentLang === "FR" ? "Retour à la livraison" : "Back"}</span>
               </button>
               <button
                 onClick={handlePlaceOrder}
@@ -538,10 +542,11 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
             <div className="space-y-2 max-h-40 overflow-y-auto mb-4">
               {items.map((item) => {
                 const isKilo = item.typeAchat === "kilo";
+                const uniteDetail = item.produit.uniteDetailProduit || "Détail";
                 const unitPrice = isKilo ? (item.produit.prixKiloProduit || 0) : (item.produit.prixBoiteProduit || 0);
-                const unitLabel = isKilo ? "kg" : "boîte";
+                const unitLabel = isKilo ? "kg" : uniteDetail;
                 return (
-                  <div key={`${item.produit.idProduit}-${item.typeAchat || "boite"}`} className="flex justify-between text-xs text-neutral-600">
+                  <div key={`${item.produit.idProduit}-${item.typeAchat || uniteDetail}`} className="flex justify-between text-xs text-neutral-600">
                     <span>{item.quantiteProduit} {unitLabel} × {item.produit.nomProduit}</span>
                     <span className="font-medium">{formatPrice(unitPrice * item.quantiteProduit)}</span>
                   </div>
@@ -631,9 +636,9 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
               <div className="flex justify-between">
                 <span>{currentLang === "FR" ? "Paiement" : "Payment"}</span>
                 <span className="font-medium text-neutral-900 capitalize">
-                  {modePaiement === "mobile_money"
+                  {completedOrder.modePaiementCommande === "mobile_money"
                     ? "Mobile Money"
-                    : modePaiement === "especes"
+                    : completedOrder.modePaiementCommande === "especes"
                     ? currentLang === "FR" ? "Espèces à la livraison" : "Cash on delivery"
                     : currentLang === "FR" ? "Carte bancaire" : "Credit Card"}
                 </span>

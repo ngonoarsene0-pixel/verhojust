@@ -34,7 +34,7 @@ export default function ProductDetailPage({ currentLang = "FR" }: ProductDetailP
   const [produit, setProduit] = useState<ProduitWithType | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantite, setQuantite] = useState(1);
-  const [unitType, setUnitType] = useState<"boite" | "kilo">("boite");
+  const [unitType, setUnitType] = useState<string>("kilo");
   const [reviews, setReviews] = useState<Avis[]>([]);
   const [newRating, setNewRating] = useState(5);
   const [newComment, setNewComment] = useState("");
@@ -47,8 +47,9 @@ export default function ProductDetailPage({ currentLang = "FR" }: ProductDetailP
       const p = await productService.getById(Number(id));
       setProduit(p);
       if (p) {
+        const detailUnit = p.uniteDetailProduit || "Détail";
         if (p.prixBoiteProduit > 0) {
-          setUnitType("boite");
+          setUnitType(detailUnit);
         } else if (p.prixKiloProduit > 0) {
           setUnitType("kilo");
         }
@@ -89,7 +90,8 @@ export default function ProductDetailPage({ currentLang = "FR" }: ProductDetailP
     );
   }
 
-  const activePrice = unitType === "boite" ? produit.prixBoiteProduit : produit.prixKiloProduit;
+  const uniteDetail = produit.uniteDetailProduit || "Détail";
+  const activePrice = unitType === "kilo" ? produit.prixKiloProduit : produit.prixBoiteProduit;
 
   const stockStatus = productService.getStockStatus(produit);
   const stockConfig = {
@@ -118,16 +120,16 @@ export default function ProductDetailPage({ currentLang = "FR" }: ProductDetailP
   const handleAddToCart = async () => {
     if (stockStatus === "rupture") return;
     try {
-      await addToCart(produit.idProduit, quantite, unitType);
+      await addToCart(produit.idProduit, quantite, unitType as any);
       
-      const labelUnit = unitType === "boite" 
-        ? (currentLang === "FR" ? "Boîte(s)" : "Box(es)") 
-        : (currentLang === "FR" ? "Kg" : "Kg");
+      const labelUnit = unitType === "kilo" 
+        ? "Kg" 
+        : uniteDetail;
 
       notify(
         currentLang === "FR"
-          ? `${quantite} ${labelUnit} × ${produit.nomProduit} ajouté(s) au panier`
-          : `${quantite} ${labelUnit} × ${produit.nomProduit} added to cart`
+          ? `${quantite} (${labelUnit}) × ${produit.nomProduit} ajouté(s) au panier`
+          : `${quantite} (${labelUnit}) × ${produit.nomProduit} added to cart`
       );
     } catch {
       notify(
@@ -141,11 +143,13 @@ export default function ProductDetailPage({ currentLang = "FR" }: ProductDetailP
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* Bouton de retour amélioré */}
       <button
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 mb-6 transition-colors"
+        onClick={() => navigate("/catalogue")}
+        className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-600 hover:text-primary-600 bg-neutral-100 hover:bg-primary-50 px-4 py-2 rounded-xl transition-colors mb-6"
       >
-        <ArrowLeft className="w-4 h-4" /> {currentLang === "FR" ? "Retour" : "Back"}
+        <ArrowLeft className="w-4 h-4" /> 
+        <span>{currentLang === "FR" ? "Retour au catalogue" : "Back to catalog"}</span>
       </button>
 
       <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
@@ -182,7 +186,7 @@ export default function ProductDetailPage({ currentLang = "FR" }: ProductDetailP
             <span className="text-sm font-semibold">{stockConfig.label}</span>
           </div>
 
-          {/* Choix du format / conditionnement (Boîte vs Kilo) */}
+          {/* Choix du format / conditionnement (Détail vs Kilo) */}
           <div className="mb-6">
             <label className="label mb-2">
               {currentLang === "FR" ? "Choisir le format :" : "Select format:"}
@@ -191,16 +195,18 @@ export default function ProductDetailPage({ currentLang = "FR" }: ProductDetailP
               {produit.prixBoiteProduit > 0 && (
                 <button
                   type="button"
-                  onClick={() => setUnitType("boite")}
+                  onClick={() => setUnitType(uniteDetail)}
                   className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${
-                    unitType === "boite"
+                    unitType === uniteDetail
                       ? "border-primary-600 bg-primary-50/50 text-primary-900 font-semibold shadow-sm"
                       : "border-neutral-200 hover:border-neutral-300 text-neutral-700"
                   }`}
                 >
                   <Box className="w-5 h-5 text-primary-600" />
                   <div className="text-left">
-                    <p className="text-xs text-neutral-500">{currentLang === "FR" ? "Par Boîte" : "Per Box"}</p>
+                    <p className="text-xs text-neutral-500">
+                      {currentLang === "FR" ? `Par ${uniteDetail}` : `Per ${uniteDetail}`}
+                    </p>
                     <p className="font-bold text-sm">{formatPrice(produit.prixBoiteProduit)}</p>
                   </div>
                 </button>
@@ -236,7 +242,7 @@ export default function ProductDetailPage({ currentLang = "FR" }: ProductDetailP
             </p>
           </div>
 
-          {/* Selector de quantité avec Saisie Libre au clavier + boutons +/- */}
+          {/* Selecteur de quantité avec Saisie Libre au clavier + boutons +/- */}
           <div className="flex items-center gap-4 mb-6">
             <div className="flex items-center border border-neutral-300 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-primary-500">
               <button
@@ -278,7 +284,7 @@ export default function ProductDetailPage({ currentLang = "FR" }: ProductDetailP
             </div>
 
             <span className="text-sm font-semibold text-neutral-600">
-              {unitType === "kilo" ? "Kg" : (currentLang === "FR" ? "Boîte(s)" : "Box(es)")}
+              {unitType === "kilo" ? "Kg" : `Sachet/Flacon (${uniteDetail})`}
             </span>
           </div>
 

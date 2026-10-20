@@ -7,9 +7,9 @@ interface CartContextValue {
   items: CartItem[];
   loading: boolean;
   refresh: () => Promise<void>;
-  addToCart: (idProduit: number, quantite?: number, typeAchat?: "boite" | "kilo") => Promise<void>;
-  updateQuantity: (idProduit: number, quantite: number, typeAchat?: "boite" | "kilo") => Promise<void>;
-  removeFromCart: (idProduit: number, typeAchat?: "boite" | "kilo") => Promise<void>;
+  addToCart: (idProduit: number, quantite?: number, typeAchat?: string) => Promise<void>;
+  updateQuantity: (idProduit: number, quantite: number, typeAchat?: string) => Promise<void>;
+  removeFromCart: (idProduit: number, typeAchat?: string) => Promise<void>;
   clearCart: () => Promise<void>;
   totalItems: number;
   totalAmount: number;
@@ -40,7 +40,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const addToCart = useCallback(
-    async (idProduit: number, quantite = 1, typeAchat: "boite" | "kilo" = "boite") => {
+    async (idProduit: number, quantite = 1, typeAchat: string = "kilo") => {
       const data = await cartService.addToCart(clientId, idProduit, quantite, typeAchat);
       setItems(data);
     },
@@ -48,7 +48,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const updateQuantity = useCallback(
-    async (idProduit: number, quantite: number, typeAchat: "boite" | "kilo" = "boite") => {
+    async (idProduit: number, quantite: number, typeAchat: string = "kilo") => {
       const data = await cartService.updateQuantity(clientId, idProduit, quantite, typeAchat);
       setItems(data);
     },
@@ -56,7 +56,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const removeFromCart = useCallback(
-    async (idProduit: number, typeAchat?: "boite" | "kilo") => {
+    async (idProduit: number, typeAchat?: string) => {
       const data = await cartService.removeFromCart(clientId, idProduit, typeAchat);
       setItems(data);
     },
@@ -70,7 +70,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const totalItems = items.reduce((s, i) => s + i.quantiteProduit, 0);
   
-  // Calcul dynamique basé sur le type d'achat (Boîte ou Kilo) sans NaN
+  // Calcul dynamique basé sur le type d'achat (Détail vs Kilo) sans erreur
   const totalAmount = items.reduce((s, i) => {
     const prixUnitaire = i.typeAchat === "kilo" 
       ? (i.produit.prixKiloProduit || 0) 

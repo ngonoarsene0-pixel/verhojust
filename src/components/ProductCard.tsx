@@ -19,16 +19,19 @@ export default function ProductCard({ produit }: { produit: ProduitWithType }) {
     en_stock: { label: "En stock", className: "bg-emerald-100 text-emerald-700" },
   }[stockStatus];
 
-  // Fonction pour ajouter soit en boîte, soit en kilo
-  const handleAdd = async (e: React.MouseEvent, typeAchat: "boite" | "kilo") => {
+  // Récupération dynamique de l'unité de détail (ex: "100g", "50g", "1L", etc.)
+  const uniteDetail = produit.uniteDetailProduit || "Détail";
+
+  // Fonction pour ajouter soit au format détail (grammes/litres), soit au kilo
+  const handleAdd = async (e: React.MouseEvent, typeAchat: string) => {
     e.preventDefault(); // Empêche d'ouvrir la page du produit au clic sur le bouton
     if (stockStatus === "rupture") {
       notify("Produit en rupture de stock", "error");
       return;
     }
     try {
-      await addToCart(produit.idProduit, 1, typeAchat);
-      const libelle = typeAchat === "boite" ? "en boîte" : "en kilo";
+      await addToCart(produit.idProduit, 1, typeAchat as any);
+      const libelle = typeAchat === "kilo" ? "en kilo" : `en ${uniteDetail}`;
       notify(`${produit.nomProduit} (${libelle}) ajouté au panier`);
     } catch {
       notify("Erreur lors de l'ajout au panier", "error");
@@ -77,27 +80,27 @@ export default function ProductCard({ produit }: { produit: ProduitWithType }) {
           {produit.descriptionProduit}
         </p>
         
-        {/* Section Affichage des Prix et Boutons d'ajout distincts (Boîte / Kilo) */}
+        {/* Section Affichage des Prix et Boutons d'ajout distincts (Détail / Kilo) */}
         <div className="flex flex-col gap-2 mt-auto pt-2 border-t border-neutral-100">
           
-          {/* Prix Boîte + Bouton Ajout Boîte */}
+          {/* Prix Détail (Grammes / Litres) + Bouton Ajout */}
           {produit.prixBoiteProduit > 0 && (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] uppercase font-semibold bg-primary-50 text-primary-700 px-1.5 py-0.5 rounded">
-                  Boîte
+                  {uniteDetail}
                 </span>
                 <span className="font-display font-bold text-sm text-neutral-900">
                   {formatPrice(produit.prixBoiteProduit)}
                 </span>
               </div>
               <button
-                onClick={(e) => handleAdd(e, "boite")}
+                onClick={(e) => handleAdd(e, uniteDetail)}
                 disabled={stockStatus === "rupture"}
                 className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-all flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
-                title="Ajouter la boîte au panier"
+                title={`Ajouter ${uniteDetail} au panier`}
               >
-                <ShoppingCart className="w-3 h-3" /> + Boîte
+                <ShoppingCart className="w-3 h-3" /> + {uniteDetail}
               </button>
             </div>
           )}

@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * Database Schema Types — mapped 1:1 to the MySQL tables
+ * Database Schema Types — mapped 1:1 to the MySQL / Supabase tables
  * ============================================================================
  * CLIENT, COMPTE, COMMANDE, LIGNECOMMANDE, LIVRAISON, LIGNELIVRAISON,
  * PANIER, REGROUPER, PRODUIT, TYPEPRODUIT, VENTE, LIGNEVENTE
@@ -20,8 +20,9 @@ export interface Produit {
   idTypeProduit: number;
   nomProduit: string;
   descriptionProduit: string;
-  prixBoiteProduit: number;
-  prixKiloProduit: number;
+  prixBoiteProduit: number; // Représente le prix détail (grammes, millilitres, etc.)
+  prixKiloProduit: number;  // Représente le prix au kilo
+  uniteDetailProduit?: string; // NOUVEAU : Ex: "100g", "50g", "1L", "Kg"
   quantiteStockProduit: number;
   seuilAlertProduit: number;
   imageProduit: string;
@@ -135,7 +136,7 @@ export interface ProduitWithType extends Produit {
 export interface CartItem {
   produit: Produit;
   quantiteProduit: number;
-  typeAchat: "boite" | "kilo"; // Ajouté pour gérer le choix boîte ou kilo
+  typeAchat: string; // Modifié pour accepter "kilo", "100g", "1L", etc.
 }
 
 export interface CommandeWithDetails extends Commande {

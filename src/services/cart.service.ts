@@ -43,13 +43,14 @@ export const cartService = {
 
     return (lignes || []).map((l: any) => ({
       quantiteProduit: l.quantite_produit,
-      typeAchat: l.type_achat || "boite",
+      typeAchat: l.type_achat || "kilo",
       produit: {
         idProduit: l.produit.id_produit,
         nomProduit: l.produit.nom_produit,
         descriptionProduit: l.produit.description_produit,
         prixBoiteProduit: l.produit.prix_boite_produit || 0,
         prixKiloProduit: l.produit.prix_kilo_produit || 0,
+        uniteDetailProduit: l.produit.unite_detail_produit,
         quantiteStockProduit: l.produit.quantite_stock_produit,
         seuilAlertProduit: l.produit.seuil_alert_produit,
         imageProduit: l.produit.image_produit,
@@ -70,7 +71,7 @@ export const cartService = {
     idClient: number,
     idProduit: number,
     quantite: number = 1,
-    typeAchat: "boite" | "kilo" = "boite"
+    typeAchat: string = "kilo"
   ): Promise<CartItem[]> {
     let { data: paniers, error: panierError } = await supabase
       .from("panier")
@@ -134,7 +135,7 @@ export const cartService = {
     idClient: number,
     idProduit: number,
     quantite: number,
-    typeAchat: "boite" | "kilo" = "boite"
+    typeAchat: string = "kilo"
   ): Promise<CartItem[]> {
     const { data: paniers } = await supabase
       .from("panier")
@@ -166,7 +167,7 @@ export const cartService = {
   async removeFromCart(
     idClient: number,
     idProduit: number,
-    typeAchat: "boite" | "kilo" = "boite"
+    typeAchat: string = "kilo"
   ): Promise<CartItem[]> {
     const { data: paniers } = await supabase
       .from("panier")
