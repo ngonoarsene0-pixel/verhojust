@@ -45,6 +45,7 @@ export const productService = {
       descriptionProduit: p.description_produit,
       prixBoiteProduit: p.prix_boite_produit ?? 0,
       prixKiloProduit: p.prix_kilo_produit ?? 0,
+      uniteDetailProduit: p.unite_detail_produit || "Détail",
       quantiteStockProduit: p.quantite_stock_produit,
       seuilAlertProduit: p.seuil_alert_produit,
       imageProduit: formatImageUrl(p.image_produit),
@@ -74,6 +75,7 @@ export const productService = {
       descriptionProduit: data.description_produit,
       prixBoiteProduit: data.prix_boite_produit ?? 0,
       prixKiloProduit: data.prix_kilo_produit ?? 0,
+      uniteDetailProduit: data.unite_detail_produit || "Détail",
       quantiteStockProduit: data.quantite_stock_produit,
       seuilAlertProduit: data.seuil_alert_produit,
       imageProduit: formatImageUrl(data.image_produit),
@@ -101,6 +103,7 @@ export const productService = {
       descriptionProduit: p.description_produit,
       prixBoiteProduit: p.prix_boite_produit ?? 0,
       prixKiloProduit: p.prix_kilo_produit ?? 0,
+      uniteDetailProduit: p.unite_detail_produit || "Détail",
       quantiteStockProduit: p.quantite_stock_produit,
       seuilAlertProduit: p.seuil_alert_produit,
       imageProduit: formatImageUrl(p.image_produit),
@@ -128,6 +131,7 @@ export const productService = {
       descriptionProduit: p.description_produit,
       prixBoiteProduit: p.prix_boite_produit ?? 0,
       prixKiloProduit: p.prix_kilo_produit ?? 0,
+      uniteDetailProduit: p.unite_detail_produit || "Détail",
       quantiteStockProduit: p.quantite_stock_produit,
       seuilAlertProduit: p.seuil_alert_produit,
       imageProduit: formatImageUrl(p.image_produit),
@@ -156,6 +160,7 @@ export const productService = {
         description_produit: data.descriptionProduit,
         prix_boite_produit: data.prixBoiteProduit,
         prix_kilo_produit: data.prixKiloProduit,
+        unite_detail_produit: data.uniteDetailProduit,
         quantite_stock_produit: data.quantiteStockProduit,
         seuil_alert_produit: data.seuilAlertProduit,
         image_produit: data.imageProduit,
@@ -172,6 +177,7 @@ export const productService = {
       descriptionProduit: inserted.description_produit,
       prixBoiteProduit: inserted.prix_boite_produit ?? 0,
       prixKiloProduit: inserted.prix_kilo_produit ?? 0,
+      uniteDetailProduit: inserted.unite_detail_produit || "Détail",
       quantiteStockProduit: inserted.quantite_stock_produit,
       seuilAlertProduit: inserted.seuil_alert_produit,
       imageProduit: formatImageUrl(inserted.image_produit),
@@ -186,6 +192,7 @@ export const productService = {
     if (data.descriptionProduit !== undefined) updatePayload.description_produit = data.descriptionProduit;
     if (data.prixBoiteProduit !== undefined) updatePayload.prix_boite_produit = data.prixBoiteProduit;
     if (data.prixKiloProduit !== undefined) updatePayload.prix_kilo_produit = data.prixKiloProduit;
+    if (data.uniteDetailProduit !== undefined) updatePayload.unite_detail_produit = data.uniteDetailProduit;
     if (data.quantiteStockProduit !== undefined) updatePayload.quantite_stock_produit = data.quantiteStockProduit;
     if (data.seuilAlertProduit !== undefined) updatePayload.seuil_alert_produit = data.seuilAlertProduit;
     if (data.imageProduit !== undefined) updatePayload.image_produit = data.imageProduit;
@@ -206,6 +213,7 @@ export const productService = {
       descriptionProduit: updated.description_produit,
       prixBoiteProduit: updated.prix_boite_produit ?? 0,
       prixKiloProduit: updated.prix_kilo_produit ?? 0,
+      uniteDetailProduit: updated.unite_detail_produit || "Détail",
       quantiteStockProduit: updated.quantite_stock_produit,
       seuilAlertProduit: updated.seuil_alert_produit,
       imageProduit: formatImageUrl(updated.image_produit),
@@ -234,6 +242,7 @@ export const productService = {
         descriptionProduit: p.description_produit,
         prixBoiteProduit: p.prix_boite_produit ?? 0,
         prixKiloProduit: p.prix_kilo_produit ?? 0,
+        uniteDetailProduit: p.unite_detail_produit || "Détail",
         quantiteStockProduit: p.quantite_stock_produit,
         seuilAlertProduit: p.seuil_alert_produit,
         imageProduit: formatImageUrl(p.image_produit),
