@@ -283,8 +283,9 @@ export default function ProductDetailPage({ currentLang = "FR" }: ProductDetailP
               </button>
             </div>
 
+            {/* AFFICHAGE DYNAMIQUE DIRECTEMENT DEPUIS LA BASE DE DONNÉES */}
             <span className="text-sm font-semibold text-neutral-600">
-              {unitType === "kilo" ? "Kg" : `Sachet/Flacon (${uniteDetail})`}
+              {unitType === "kilo" ? "Kg" : uniteDetail}
             </span>
           </div>
 
