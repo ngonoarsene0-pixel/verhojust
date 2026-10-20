@@ -135,6 +135,7 @@ export interface ProduitWithType extends Produit {
 export interface CartItem {
   produit: Produit;
   quantiteProduit: number;
+  typeAchat: "boite" | "kilo"; // Ajouté pour gérer le choix boîte ou kilo
 }
 
 export interface CommandeWithDetails extends Commande {

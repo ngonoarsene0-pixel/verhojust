@@ -19,15 +19,17 @@ export default function ProductCard({ produit }: { produit: ProduitWithType }) {
     en_stock: { label: "En stock", className: "bg-emerald-100 text-emerald-700" },
   }[stockStatus];
 
-  const handleAdd = async (e: React.MouseEvent) => {
-    e.preventDefault();
+  // Fonction pour ajouter soit en boîte, soit en kilo
+  const handleAdd = async (e: React.MouseEvent, typeAchat: "boite" | "kilo") => {
+    e.preventDefault(); // Empêche d'ouvrir la page du produit au clic sur le bouton
     if (stockStatus === "rupture") {
       notify("Produit en rupture de stock", "error");
       return;
     }
     try {
-      await addToCart(produit.idProduit, 1);
-      notify(`${produit.nomProduit} ajouté au panier`);
+      await addToCart(produit.idProduit, 1, typeAchat);
+      const libelle = typeAchat === "boite" ? "en boîte" : "en kilo";
+      notify(`${produit.nomProduit} (${libelle}) ajouté au panier`);
     } catch {
       notify("Erreur lors de l'ajout au panier", "error");
     }
@@ -71,15 +73,17 @@ export default function ProductCard({ produit }: { produit: ProduitWithType }) {
 
       {/* Content */}
       <div className="p-4 flex flex-col flex-1">
-        <p className="text-xs text-neutral-500 line-clamp-2 mb-2 flex-1">
+        <p className="text-xs text-neutral-500 line-clamp-2 mb-3 flex-1">
           {produit.descriptionProduit}
         </p>
         
-        {/* Section Affichage des Prix (Boîte et Kilo) */}
-        <div className="flex items-center justify-between gap-2 mt-auto pt-2 border-t border-neutral-100">
-          <div className="flex flex-col gap-0.5">
-            {produit.prixBoiteProduit > 0 && (
-              <div className="flex items-center gap-1">
+        {/* Section Affichage des Prix et Boutons d'ajout distincts (Boîte / Kilo) */}
+        <div className="flex flex-col gap-2 mt-auto pt-2 border-t border-neutral-100">
+          
+          {/* Prix Boîte + Bouton Ajout Boîte */}
+          {produit.prixBoiteProduit > 0 && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
                 <span className="text-[10px] uppercase font-semibold bg-primary-50 text-primary-700 px-1.5 py-0.5 rounded">
                   Boîte
                 </span>
@@ -87,9 +91,21 @@ export default function ProductCard({ produit }: { produit: ProduitWithType }) {
                   {formatPrice(produit.prixBoiteProduit)}
                 </span>
               </div>
-            )}
-            {produit.prixKiloProduit > 0 && (
-              <div className="flex items-center gap-1">
+              <button
+                onClick={(e) => handleAdd(e, "boite")}
+                disabled={stockStatus === "rupture"}
+                className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-all flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Ajouter la boîte au panier"
+              >
+                <ShoppingCart className="w-3 h-3" /> + Boîte
+              </button>
+            </div>
+          )}
+
+          {/* Prix Kilo + Bouton Ajout Kilo */}
+          {produit.prixKiloProduit > 0 && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
                 <span className="text-[10px] uppercase font-semibold bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded">
                   Kg
                 </span>
@@ -97,19 +113,21 @@ export default function ProductCard({ produit }: { produit: ProduitWithType }) {
                   {formatPrice(produit.prixKiloProduit)}
                 </span>
               </div>
-            )}
-            {(!produit.prixBoiteProduit && !produit.prixKiloProduit) && (
-              <span className="text-xs text-neutral-400">Prix non défini</span>
-            )}
-          </div>
+              <button
+                onClick={(e) => handleAdd(e, "kilo")}
+                disabled={stockStatus === "rupture"}
+                className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-all flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Ajouter au kilo au panier"
+              >
+                <ShoppingCart className="w-3 h-3" /> + Kg
+              </button>
+            </div>
+          )}
 
-          <button
-            onClick={handleAdd}
-            disabled={stockStatus === "rupture"}
-            className="p-2.5 rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-all hover:shadow-md active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <ShoppingCart className="w-4 h-4" />
-          </button>
+          {(!produit.prixBoiteProduit && !produit.prixKiloProduit) && (
+            <span className="text-xs text-neutral-400">Prix non défini</span>
+          )}
+
         </div>
       </div>
     </Link>

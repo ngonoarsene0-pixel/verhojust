@@ -41,11 +41,14 @@ export const orderService = {
       throw new Error("Impossible d'identifier ou de créer le client pour cette commande.");
     }
 
-    // Calcul du sous-total des articles
-    const sousTotal = input.items.reduce(
-      (s, i) => s + i.produit.prixProduit * i.quantiteProduit,
-      0
-    );
+    // Calcul du sous-total des articles selon le type d'achat (kilo ou boite)
+    const sousTotal = input.items.reduce((s, i) => {
+      const prixUnitaire =
+        i.typeAchat === "kilo"
+          ? i.produit.prixKiloProduit || 0
+          : i.produit.prixBoiteProduit || 0;
+      return s + prixUnitaire * i.quantiteProduit;
+    }, 0);
 
     // Ajout des frais de livraison fixes (1000 FCFA)
     const fraisLivraison = 1000;
@@ -80,11 +83,17 @@ export const orderService = {
     };
 
     for (const item of input.items) {
+      const prixUnitaire =
+        item.typeAchat === "kilo"
+          ? item.produit.prixKiloProduit || 0
+          : item.produit.prixBoiteProduit || 0;
+
       const { error: ligneError } = await supabase.from("lignecommande").insert({
         id_commande: commande.idCommande,
         id_produit: item.produit.idProduit,
         quantite_produit: item.quantiteProduit,
-        prix_unitaire: item.produit.prixProduit,
+        prix_unitaire: prixUnitaire,
+        type_achat: item.typeAchat || "boite",
       });
 
       if (ligneError) throw ligneError;
@@ -157,15 +166,19 @@ export const orderService = {
         idProduit: l.id_produit,
         quantiteProduit: l.quantite_produit,
         prixUnitaire: l.prix_unitaire,
-        produit: l.produit ? {
-          idProduit: l.produit.id_produit,
-          nomProduit: l.produit.nom_produit,
-          descriptionProduit: l.produit.description_produit,
-          prixProduit: l.produit.prix_produit,
-          quantiteStockProduit: l.produit.quantite_stock_produit,
-          imageProduit: l.produit.image_produit,
-          idTypeProduit: l.produit.id_type_produit,
-        } : undefined,
+        typeAchat: l.type_achat || "boite",
+        produit: l.produit
+          ? {
+              idProduit: l.produit.id_produit,
+              nomProduit: l.produit.nom_produit,
+              descriptionProduit: l.produit.description_produit,
+              prixBoiteProduit: l.produit.prix_boite_produit || 0,
+              prixKiloProduit: l.produit.prix_kilo_produit || 0,
+              quantiteStockProduit: l.produit.quantite_stock_produit,
+              imageProduit: l.produit.image_produit,
+              idTypeProduit: l.produit.id_type_produit,
+            }
+          : undefined,
       })),
     }));
   },
@@ -187,36 +200,45 @@ export const orderService = {
       adresseLivraisonCommande: c.adresse_livraison_commande,
       modePaiementCommande: c.mode_paiement_commande,
       referenceCommande: c.reference_commande,
-      client: c.client ? {
-        idClient: c.client.id_client,
-        nomClient: c.client.nom_client,
-        prenomClient: c.client.prenom_client,
-        telephoneClient: c.client.telephone_client,
-        emailClient: c.client.email_client,
-        adresseClient: c.client.adresse_client,
-        villeClient: c.client.ville_client,
-        dateInscription: c.client.date_inscription,
-      } : undefined,
+      client: c.client
+        ? {
+            idClient: c.client.id_client,
+            nomClient: c.client.nom_client,
+            prenomClient: c.client.prenom_client,
+            telephoneClient: c.client.telephone_client,
+            emailClient: c.client.email_client,
+            adresseClient: c.client.adresse_client,
+            villeClient: c.client.ville_client,
+            dateInscription: c.client.date_inscription,
+          }
+        : undefined,
       lignes: (c.lignecommande || []).map((l: any) => ({
         idLigneCommande: l.id_ligne_commande,
         idCommande: l.id_commande,
         idProduit: l.id_produit,
         quantiteProduit: l.quantite_produit,
         prixUnitaire: l.prix_unitaire,
-        produit: l.produit ? {
-          idProduit: l.produit.id_produit,
-          nomProduit: l.produit.nom_produit,
-          descriptionProduit: l.produit.description_produit,
-          prixProduit: l.produit.prix_produit,
-          quantiteStockProduit: l.produit.quantite_stock_produit,
-          imageProduit: l.produit.image_produit,
-          idTypeProduit: l.produit.id_type_produit,
-        } : undefined,
+        typeAchat: l.type_achat || "boite",
+        produit: l.produit
+          ? {
+              idProduit: l.produit.id_produit,
+              nomProduit: l.produit.nom_produit,
+              descriptionProduit: l.produit.description_produit,
+              prixBoiteProduit: l.produit.prix_boite_produit || 0,
+              prixKiloProduit: l.produit.prix_kilo_produit || 0,
+              quantiteStockProduit: l.produit.quantite_stock_produit,
+              imageProduit: l.produit.image_produit,
+              idTypeProduit: l.produit.id_type_produit,
+            }
+          : undefined,
       })),
     }));
   },
 
-  async updateOrderStatus(idCommande: number, statut: Commande["statutCommande"]): Promise<Commande> {
+  async updateOrderStatus(
+    idCommande: number,
+    statut: Commande["statutCommande"]
+  ): Promise<Commande> {
     const { data, error } = await supabase
       .from("commande")
       .update({ statut_commande: statut })

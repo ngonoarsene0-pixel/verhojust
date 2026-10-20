@@ -7,9 +7,9 @@ interface CartContextValue {
   items: CartItem[];
   loading: boolean;
   refresh: () => Promise<void>;
-  addToCart: (idProduit: number, quantite?: number) => Promise<void>;
-  updateQuantity: (idProduit: number, quantite: number) => Promise<void>;
-  removeFromCart: (idProduit: number) => Promise<void>;
+  addToCart: (idProduit: number, quantite?: number, typeAchat?: "boite" | "kilo") => Promise<void>;
+  updateQuantity: (idProduit: number, quantite: number, typeAchat?: "boite" | "kilo") => Promise<void>;
+  removeFromCart: (idProduit: number, typeAchat?: "boite" | "kilo") => Promise<void>;
   clearCart: () => Promise<void>;
   totalItems: number;
   totalAmount: number;
@@ -40,24 +40,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const addToCart = useCallback(
-    async (idProduit: number, quantite = 1) => {
-      const data = await cartService.addToCart(clientId, idProduit, quantite);
+    async (idProduit: number, quantite = 1, typeAchat: "boite" | "kilo" = "boite") => {
+      const data = await cartService.addToCart(clientId, idProduit, quantite, typeAchat);
       setItems(data);
     },
     [clientId]
   );
 
   const updateQuantity = useCallback(
-    async (idProduit: number, quantite: number) => {
-      const data = await cartService.updateQuantity(clientId, idProduit, quantite);
+    async (idProduit: number, quantite: number, typeAchat: "boite" | "kilo" = "boite") => {
+      const data = await cartService.updateQuantity(clientId, idProduit, quantite, typeAchat);
       setItems(data);
     },
     [clientId]
   );
 
   const removeFromCart = useCallback(
-    async (idProduit: number) => {
-      const data = await cartService.removeFromCart(clientId, idProduit);
+    async (idProduit: number, typeAchat?: "boite" | "kilo") => {
+      const data = await cartService.removeFromCart(clientId, idProduit, typeAchat);
       setItems(data);
     },
     [clientId]
@@ -69,10 +69,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [clientId]);
 
   const totalItems = items.reduce((s, i) => s + i.quantiteProduit, 0);
-  const totalAmount = items.reduce(
-    (s, i) => s + i.produit.prixProduit * i.quantiteProduit,
-    0
-  );
+  
+  // Calcul dynamique basé sur le type d'achat (Boîte ou Kilo) sans NaN
+  const totalAmount = items.reduce((s, i) => {
+    const prixUnitaire = i.typeAchat === "kilo" 
+      ? (i.produit.prixKiloProduit || 0) 
+      : (i.produit.prixBoiteProduit || 0);
+    return s + prixUnitaire * i.quantiteProduit;
+  }, 0);
 
   return (
     <CartContext.Provider

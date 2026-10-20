@@ -1,3 +1,4 @@
+// src/pages/CheckoutPage.tsx
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -19,7 +20,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
 import { orderService } from "../services/order.service";
 import { deliveryService } from "../services/delivery.service";
-import { cinetPayService } from "../services/cinetpay.service";
+import { notchPayService } from "../services/notchpay.service";
 import { formatPrice } from "../lib/format";
 import { BUSINESS } from "../lib/db";
 import type { Commande } from "../lib/types";
@@ -85,28 +86,23 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
     try {
       const clientId = user?.client.idClient ?? 0;
       
-      // Si le client choisit Mobile Money ou Carte, on initialise le paiement CinetPay
+      // Si le client choisit Mobile Money ou Carte, on initialise le paiement Notch Pay
       if (modePaiement === "mobile_money" || modePaiement === "carte") {
         const transactionId = "CMD_" + Date.now();
         
-        const paymentResponse = await cinetPayService.initiatePayment({
-          transaction_id: transactionId,
+        const paymentResponse = await notchPayService.initiatePayment({
           amount: grandTotal,
           currency: "XAF",
+          email: `${guestPrenom.toLowerCase()}.${guestNom.toLowerCase()}@client.local`,
+          name: `${guestPrenom} ${guestNom}`,
+          phone: telephone,
           description: `Commande Verojust - ${items.length} article(s)`,
-          customer_name: guestNom,
-          customer_surname: guestPrenom,
-          customer_email: `${guestPrenom.toLowerCase()}.${guestNom.toLowerCase()}@client.local`,
-          customer_phone_number: telephone,
-          customer_address: adresse,
-          customer_city: ville,
-          customer_country: "CM",
-          return_url: window.location.href,
-          notify_url: "https://votre-site.com/api/notify",
+          reference: transactionId,
+          callback_url: window.location.href,
         });
 
-        if (paymentResponse && paymentResponse.code === "201" && paymentResponse.data?.payment_url) {
-          window.location.href = paymentResponse.data.payment_url;
+        if (paymentResponse.success && paymentResponse.payment_url) {
+          window.location.href = paymentResponse.payment_url;
           return;
         } else {
           notify(
@@ -348,26 +344,42 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
               {currentLang === "FR" ? "Récapitulatif de la commande" : "Order Summary"}
             </h3>
             <div className="space-y-3 max-h-64 overflow-y-auto">
-              {items.map((item) => (
-                <div key={item.produit.idProduit} className="flex gap-3 items-center">
-                  <img
-                    src={item.produit.imageProduit}
-                    alt={item.produit.nomProduit}
-                    className="w-12 h-12 rounded-lg object-cover"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-neutral-900 line-clamp-1">
-                      {item.produit.nomProduit}
-                    </p>
-                    <p className="text-xs text-neutral-500">
-                      {item.quantiteProduit} × {formatPrice(item.produit.prixProduit)}
+              {items.map((item) => {
+                const isKilo = item.typeAchat === "kilo";
+                const unitPrice = isKilo
+                  ? (item.produit.prixKiloProduit || 0)
+                  : (item.produit.prixBoiteProduit || 0);
+                const unitLabel = isKilo ? "kg" : (currentLang === "FR" ? "boîte" : "box");
+                const badgeLabel = isKilo ? "Kg" : (currentLang === "FR" ? "Boîte" : "Box");
+
+                return (
+                  <div key={`${item.produit.idProduit}-${item.typeAchat || "boite"}`} className="flex gap-3 items-center">
+                    <img
+                      src={item.produit.imageProduit}
+                      alt={item.produit.nomProduit}
+                      className="w-12 h-12 rounded-lg object-cover"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-medium text-neutral-900 line-clamp-1">
+                          {item.produit.nomProduit}
+                        </p>
+                        <span className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded ${
+                          isKilo ? "bg-amber-100 text-amber-800" : "bg-primary-100 text-primary-800"
+                        }`}>
+                          {badgeLabel}
+                        </span>
+                      </div>
+                      <p className="text-xs text-neutral-500">
+                        {item.quantiteProduit} {unitLabel} × {formatPrice(unitPrice)}
+                      </p>
+                    </div>
+                    <p className="text-sm font-semibold text-neutral-900">
+                      {formatPrice(unitPrice * item.quantiteProduit)}
                     </p>
                   </div>
-                  <p className="text-sm font-semibold text-neutral-900">
-                    {formatPrice(item.produit.prixProduit * item.quantiteProduit)}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="border-t border-neutral-200 mt-4 pt-4 space-y-2 text-sm">
               <div className="flex justify-between text-neutral-600">
@@ -475,13 +487,31 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
             <h3 className="font-semibold text-sm text-neutral-900 mb-4">
               {currentLang === "FR" ? "Adresse de livraison" : "Delivery Address"}
             </h3>
-            <div className="text-sm text-neutral-600 space-y-1">
+            <div className="text-sm text-neutral-600 space-y-1 mb-6">
               <p className="font-medium text-neutral-900">{fullName}</p>
               <p>{adresse}</p>
               <p>{ville}</p>
               <p>{telephone}</p>
             </div>
-            <div className="border-t border-neutral-200 mt-4 pt-4 space-y-2 text-sm">
+
+            <h3 className="font-semibold text-sm text-neutral-900 mb-3">
+              {currentLang === "FR" ? "Articles de la commande" : "Order Items"}
+            </h3>
+            <div className="space-y-2 max-h-40 overflow-y-auto mb-4">
+              {items.map((item) => {
+                const isKilo = item.typeAchat === "kilo";
+                const unitPrice = isKilo ? (item.produit.prixKiloProduit || 0) : (item.produit.prixBoiteProduit || 0);
+                const unitLabel = isKilo ? "kg" : "boîte";
+                return (
+                  <div key={`${item.produit.idProduit}-${item.typeAchat || "boite"}`} className="flex justify-between text-xs text-neutral-600">
+                    <span>{item.quantiteProduit} {unitLabel} × {item.produit.nomProduit}</span>
+                    <span className="font-medium">{formatPrice(unitPrice * item.quantiteProduit)}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="border-t border-neutral-200 pt-4 space-y-2 text-sm">
               <div className="flex justify-between text-neutral-600">
                 <span>{currentLang === "FR" ? "Sous-total" : "Subtotal"}</span>
                 <span>{formatPrice(totalAmount)}</span>

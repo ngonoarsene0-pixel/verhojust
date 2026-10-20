@@ -11,7 +11,6 @@ import type { CartItem } from "../lib/types";
 
 export const cartService = {
   async getCart(idClient: number): Promise<CartItem[]> {
-    // Récupérer le premier panier actif, ou en créer un s'il n'en existe pas
     let { data: paniers, error: panierError } = await supabase
       .from("panier")
       .select("id_panier")
@@ -37,28 +36,32 @@ export const cartService = {
 
     const { data: lignes, error: lignesError } = await supabase
       .from("regrouper")
-      .select("quantite_produit, produit(*, typeproduit(*))")
+      .select("quantite_produit, type_achat, produit(*, typeproduit(*))")
       .eq("id_panier", panier.id_panier);
 
     if (lignesError) throw lignesError;
 
     return (lignes || []).map((l: any) => ({
       quantiteProduit: l.quantite_produit,
+      typeAchat: l.type_achat || "boite",
       produit: {
         idProduit: l.produit.id_produit,
         nomProduit: l.produit.nom_produit,
         descriptionProduit: l.produit.description_produit,
-        prixProduit: l.produit.prix_produit,
+        prixBoiteProduit: l.produit.prix_boite_produit || 0,
+        prixKiloProduit: l.produit.prix_kilo_produit || 0,
         quantiteStockProduit: l.produit.quantite_stock_produit,
         seuilAlertProduit: l.produit.seuil_alert_produit,
         imageProduit: l.produit.image_produit,
         idTypeProduit: l.produit.id_type_produit,
         dateAjoutProduit: l.produit.date_ajout_produit,
-        typeProduit: l.produit.typeproduit ? {
-          idTypeProduit: l.produit.typeproduit.id_type_produit,
-          nomTypeProduit: l.produit.typeproduit.nom_type_produit,
-          descriptionTypeProduit: l.produit.typeproduit.description_type_produit,
-        } : undefined,
+        typeProduit: l.produit.typeproduit
+          ? {
+              idTypeProduit: l.produit.typeproduit.id_type_produit,
+              nomTypeProduit: l.produit.typeproduit.nom_type_produit,
+              descriptionTypeProduit: l.produit.typeproduit.description_type_produit,
+            }
+          : undefined,
       },
     }));
   },
@@ -66,7 +69,8 @@ export const cartService = {
   async addToCart(
     idClient: number,
     idProduit: number,
-    quantite: number
+    quantite: number = 1,
+    typeAchat: "boite" | "kilo" = "boite"
   ): Promise<CartItem[]> {
     let { data: paniers, error: panierError } = await supabase
       .from("panier")
@@ -96,6 +100,7 @@ export const cartService = {
       .select("quantite_produit")
       .eq("id_panier", panier.id_panier)
       .eq("id_produit", idProduit)
+      .eq("type_achat", typeAchat)
       .maybeSingle();
 
     if (existingError) throw existingError;
@@ -105,7 +110,8 @@ export const cartService = {
         .from("regrouper")
         .update({ quantite_produit: existing.quantite_produit + quantite })
         .eq("id_panier", panier.id_panier)
-        .eq("id_produit", idProduit);
+        .eq("id_produit", idProduit)
+        .eq("type_achat", typeAchat);
 
       if (updateError) throw updateError;
     } else {
@@ -115,6 +121,7 @@ export const cartService = {
           id_panier: panier.id_panier,
           id_produit: idProduit,
           quantite_produit: quantite,
+          type_achat: typeAchat,
         });
 
       if (insertError) throw insertError;
@@ -126,7 +133,8 @@ export const cartService = {
   async updateQuantity(
     idClient: number,
     idProduit: number,
-    quantite: number
+    quantite: number,
+    typeAchat: "boite" | "kilo" = "boite"
   ): Promise<CartItem[]> {
     const { data: paniers } = await supabase
       .from("panier")
@@ -140,21 +148,26 @@ export const cartService = {
     if (!panier) return [];
 
     if (quantite <= 0) {
-      return this.removeFromCart(idClient, idProduit);
+      return this.removeFromCart(idClient, idProduit, typeAchat);
     }
 
     const { error } = await supabase
       .from("regrouper")
       .update({ quantite_produit: quantite })
       .eq("id_panier", panier.id_panier)
-      .eq("id_produit", idProduit);
+      .eq("id_produit", idProduit)
+      .eq("type_achat", typeAchat);
 
     if (error) throw error;
 
     return this.getCart(idClient);
   },
 
-  async removeFromCart(idClient: number, idProduit: number): Promise<CartItem[]> {
+  async removeFromCart(
+    idClient: number,
+    idProduit: number,
+    typeAchat: "boite" | "kilo" = "boite"
+  ): Promise<CartItem[]> {
     const { data: paniers } = await supabase
       .from("panier")
       .select("id_panier")
@@ -170,7 +183,8 @@ export const cartService = {
       .from("regrouper")
       .delete()
       .eq("id_panier", panier.id_panier)
-      .eq("id_produit", idProduit);
+      .eq("id_produit", idProduit)
+      .eq("type_achat", typeAchat);
 
     if (error) throw error;
 
@@ -198,7 +212,11 @@ export const cartService = {
   },
 
   async getCartTotal(items: CartItem[]): Promise<number> {
-    return items.reduce((sum, i) => sum + i.produit.prixProduit * i.quantiteProduit, 0);
+    return items.reduce((sum, i) => {
+      const prixUnitaire =
+        i.typeAchat === "kilo" ? i.produit.prixKiloProduit : i.produit.prixBoiteProduit;
+      return sum + (prixUnitaire || 0) * i.quantiteProduit;
+    }, 0);
   },
 };
 

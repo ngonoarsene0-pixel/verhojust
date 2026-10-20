@@ -118,11 +118,16 @@ export default function ProductDetailPage({ currentLang = "FR" }: ProductDetailP
   const handleAddToCart = async () => {
     if (stockStatus === "rupture") return;
     try {
-      await addToCart(produit.idProduit, quantite);
+      await addToCart(produit.idProduit, quantite, unitType);
+      
+      const labelUnit = unitType === "boite" 
+        ? (currentLang === "FR" ? "Boîte(s)" : "Box(es)") 
+        : (currentLang === "FR" ? "Kg" : "Kg");
+
       notify(
         currentLang === "FR"
-          ? `${quantite} × ${produit.nomProduit} (${unitType === "boite" ? "Boîte" : "Kg"}) ajouté au panier`
-          : `${quantite} × ${produit.nomProduit} (${unitType === "boite" ? "Box" : "Kg"}) added to cart`
+          ? `${quantite} ${labelUnit} × ${produit.nomProduit} ajouté(s) au panier`
+          : `${quantite} ${labelUnit} × ${produit.nomProduit} added to cart`
       );
     } catch {
       notify(
@@ -221,27 +226,49 @@ export default function ProductDetailPage({ currentLang = "FR" }: ProductDetailP
             </div>
           </div>
 
-          {/* Affichage du prix total de l'option choisie */}
+          {/* Affichage du prix total calculé selon la quantité choisie */}
           <div className="mb-6">
+            <p className="text-xs text-neutral-400 mb-1">
+              {currentLang === "FR" ? "Prix total calculé :" : "Total calculated price:"}
+            </p>
             <p className="text-3xl font-display font-bold text-primary-700">
-              {formatPrice(activePrice)}
+              {formatPrice(activePrice * quantite)}
             </p>
           </div>
 
-          {/* Quantity selector */}
+          {/* Selector de quantité avec Saisie Libre au clavier + boutons +/- */}
           <div className="flex items-center gap-4 mb-6">
-            <div className="flex items-center border border-neutral-300 rounded-xl overflow-hidden">
+            <div className="flex items-center border border-neutral-300 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-primary-500">
               <button
+                type="button"
                 onClick={() => setQuantite(Math.max(1, quantite - 1))}
                 className="p-3 hover:bg-neutral-100 transition-colors"
                 disabled={stockStatus === "rupture"}
               >
                 <Minus className="w-4 h-4" />
               </button>
-              <span className="px-6 py-3 text-sm font-semibold min-w-[3rem] text-center">
-                {quantite}
-              </span>
+
+              <input
+                type="number"
+                min="1"
+                max={produit.quantiteStockProduit}
+                value={quantite}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  if (isNaN(val) || val < 1) {
+                    setQuantite(1);
+                  } else if (val > produit.quantiteStockProduit) {
+                    setQuantite(produit.quantiteStockProduit);
+                  } else {
+                    setQuantite(val);
+                  }
+                }}
+                className="w-16 text-center font-bold text-base py-2 focus:outline-none bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-neutral-900"
+                disabled={stockStatus === "rupture"}
+              />
+
               <button
+                type="button"
                 onClick={() => setQuantite(Math.min(produit.quantiteStockProduit, quantite + 1))}
                 className="p-3 hover:bg-neutral-100 transition-colors"
                 disabled={stockStatus === "rupture" || quantite >= produit.quantiteStockProduit}
@@ -249,10 +276,9 @@ export default function ProductDetailPage({ currentLang = "FR" }: ProductDetailP
                 <Plus className="w-4 h-4" />
               </button>
             </div>
-            <span className="text-sm text-neutral-500">
-              {currentLang === "FR"
-                ? `Max: ${produit.quantiteStockProduit} unités`
-                : `Max: ${produit.quantiteStockProduit} units`}
+
+            <span className="text-sm font-semibold text-neutral-600">
+              {unitType === "kilo" ? "Kg" : (currentLang === "FR" ? "Boîte(s)" : "Box(es)")}
             </span>
           </div>
 

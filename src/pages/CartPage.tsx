@@ -74,13 +74,25 @@ export default function CartPage({ currentLang = "FR" }: CartPageProps) {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Items */}
+        {/* Liste des articles */}
         <div className="lg:col-span-2 space-y-3">
           {items.map((item) => {
-            const price = item.produit.prixBoiteProduit || item.produit.prixKiloProduit || 0;
+            const isKilo = item.typeAchat === "kilo";
+            const price = isKilo
+              ? (item.produit.prixKiloProduit || 0)
+              : (item.produit.prixBoiteProduit || 0);
+
+            const unitLabel = isKilo
+              ? (currentLang === "FR" ? "kg" : "kg")
+              : (currentLang === "FR" ? "boîte" : "box");
+
+            const badgeLabel = isKilo
+              ? "Kg"
+              : (currentLang === "FR" ? "Boîte" : "Box");
+
             return (
               <div
-                key={item.produit.idProduit}
+                key={`${item.produit.idProduit}-${item.typeAchat || "boite"}`}
                 className="card p-4 flex gap-4 items-center"
               >
                 <Link
@@ -93,47 +105,89 @@ export default function CartPage({ currentLang = "FR" }: CartPageProps) {
                     className="w-20 h-20 rounded-xl object-cover"
                   />
                 </Link>
+
                 <div className="flex-1 min-w-0">
-                  <Link
-                    to={`/produit/${item.produit.idProduit}`}
-                    className="font-semibold text-sm text-neutral-900 hover:text-primary-700 line-clamp-1"
-                  >
-                    {item.produit.nomProduit}
-                  </Link>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Link
+                      to={`/produit/${item.produit.idProduit}`}
+                      className="font-semibold text-sm text-neutral-900 hover:text-primary-700 line-clamp-1"
+                    >
+                      {item.produit.nomProduit}
+                    </Link>
+                    <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-md ${
+                      isKilo ? "bg-amber-100 text-amber-800" : "bg-primary-100 text-primary-800"
+                    }`}>
+                      {badgeLabel}
+                    </span>
+                  </div>
+
                   <p className="text-sm text-neutral-500 mb-2">
-                    {formatPrice(price)} / {currentLang === "FR" ? "unité" : "unit"}
+                    {formatPrice(price)} / {unitLabel}
                   </p>
+
                   <div className="flex items-center gap-2">
-                    <div className="flex items-center border border-neutral-300 rounded-lg overflow-hidden">
+                    {/* Contrôle de Quantité : Boutons + Input Numérique Direct */}
+                    <div className="flex items-center border border-neutral-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-primary-500">
                       <button
-                        onClick={() =>
-                          updateQuantity(item.produit.idProduit, item.quantiteProduit - 1)
-                        }
-                        className="p-1.5 hover:bg-neutral-100 transition-colors"
+                        onClick={() => {
+                          const newQty = item.quantiteProduit - 1;
+                          if (newQty <= 0) {
+                            removeFromCart(item.produit.idProduit, item.typeAchat);
+                          } else {
+                            updateQuantity(item.produit.idProduit, newQty, item.typeAchat);
+                          }
+                        }}
+                        className="p-1.5 hover:bg-neutral-100 transition-colors text-neutral-700"
+                        title="Diminuer"
                       >
                         <Minus className="w-3.5 h-3.5" />
                       </button>
-                      <span className="px-3 py-1.5 text-sm font-semibold min-w-[2.5rem] text-center">
-                        {item.quantiteProduit}
-                      </span>
+
+                      <input
+                        type="number"
+                        min="1"
+                        max={item.produit.quantiteStockProduit}
+                        value={item.quantiteProduit}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10);
+                          if (isNaN(val) || val <= 0) {
+                            removeFromCart(item.produit.idProduit, item.typeAchat);
+                          } else if (val > item.produit.quantiteStockProduit) {
+                            updateQuantity(item.produit.idProduit, item.produit.quantiteStockProduit, item.typeAchat);
+                          } else {
+                            updateQuantity(item.produit.idProduit, val, item.typeAchat);
+                          }
+                        }}
+                        className="w-12 text-center font-bold text-sm py-1 focus:outline-none bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-neutral-900"
+                      />
+
                       <button
                         onClick={() =>
-                          updateQuantity(item.produit.idProduit, item.quantiteProduit + 1)
+                          updateQuantity(item.produit.idProduit, item.quantiteProduit + 1, item.typeAchat)
                         }
                         disabled={item.quantiteProduit >= item.produit.quantiteStockProduit}
-                        className="p-1.5 hover:bg-neutral-100 transition-colors disabled:opacity-40"
+                        className="p-1.5 hover:bg-neutral-100 transition-colors disabled:opacity-40 text-neutral-700"
+                        title="Augmenter"
                       >
                         <Plus className="w-3.5 h-3.5" />
                       </button>
                     </div>
+
+                    <span className="text-xs font-medium text-neutral-500 mr-2">
+                      {unitLabel}
+                    </span>
+
+                    {/* Bouton pour tout effacer / supprimer la ligne */}
                     <button
-                      onClick={() => removeFromCart(item.produit.idProduit)}
+                      onClick={() => removeFromCart(item.produit.idProduit, item.typeAchat)}
                       className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title={currentLang === "FR" ? "Supprimer du panier" : "Remove item"}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
+
                 <div className="text-right shrink-0">
                   <p className="font-display font-bold text-lg text-primary-700">
                     {formatPrice(price * item.quantiteProduit)}
@@ -144,7 +198,7 @@ export default function CartPage({ currentLang = "FR" }: CartPageProps) {
           })}
         </div>
 
-        {/* Summary */}
+        {/* Récapitulatif du total */}
         <div className="lg:col-span-1">
           <div className="card p-6 sticky top-24">
             <h3 className="font-display font-bold text-lg text-neutral-900 mb-4">

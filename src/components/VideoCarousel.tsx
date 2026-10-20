@@ -43,7 +43,6 @@ export default function VideoCarousel() {
     const video = videoRef.current;
     if (video) {
       video.pause();
-      video.muted = true;
     }
     setIsFullscreen(true);
   };
@@ -65,11 +64,15 @@ export default function VideoCarousel() {
             onClick={handleVideoClick}
           >
             <video
+              key={videos[activeIndex].src}
               ref={videoRef}
               src={videos[activeIndex].src}
               className="w-full h-full object-contain bg-black pointer-events-none"
-              preload="metadata"
+              autoPlay
+              muted
+              loop
               playsInline
+              preload="metadata"
             />
 
             {/* Gradient overlay */}
@@ -92,7 +95,7 @@ export default function VideoCarousel() {
               </p>
             </div>
 
-            {/* Navigation arrows (empêchent l'ouverture du plein écran au clic) */}
+            {/* Navigation arrows */}
             <button
               onClick={(e) => { e.stopPropagation(); goTo(activeIndex - 1); }}
               className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 w-9 h-9 md:w-11 md:h-11 rounded-full bg-black/40 md:bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10"
@@ -124,10 +127,9 @@ export default function VideoCarousel() {
         </div>
       </section>
 
-      {/* MODAL / PLEIN ÉCRAN AVEC NAVIGATION INTÉGRÉE */}
+      {/* MODAL / PLEIN ÉCRAN */}
       {isFullscreen && (
         <div className="fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-center p-4">
-          {/* Bouton Retour (Croix) pour fermer */}
           <button
             onClick={() => setIsFullscreen(false)}
             className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-all z-50 shadow-lg cursor-pointer"
@@ -136,7 +138,6 @@ export default function VideoCarousel() {
             <X className="w-7 h-7" />
           </button>
 
-          {/* Titre en haut en mode plein écran */}
           <div className="absolute top-6 left-6 right-20 text-white z-40 pointer-events-none">
             <h3 className="font-display text-lg md:text-2xl font-bold truncate">
               {videos[activeIndex].title}
@@ -146,7 +147,6 @@ export default function VideoCarousel() {
             </p>
           </div>
 
-          {/* Conteneur de la vidéo en plein écran avec flèches de zapping intégrées */}
           <div className="relative w-full max-w-5xl max-h-[80vh] flex items-center justify-center">
             <video
               key={videos[activeIndex].src}
@@ -157,7 +157,6 @@ export default function VideoCarousel() {
               playsInline
             />
 
-            {/* Bouton Précédent en plein écran */}
             <button
               onClick={() => goTo(activeIndex - 1)}
               className="absolute left-2 md:left-[-60px] top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-all z-40 shadow-lg"
@@ -166,7 +165,6 @@ export default function VideoCarousel() {
               <ChevronLeft className="w-7 h-7" />
             </button>
 
-            {/* Bouton Suivant en plein écran */}
             <button
               onClick={() => goTo(activeIndex + 1)}
               className="absolute right-2 md:right-[-60px] top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-all z-40 shadow-lg"
@@ -176,7 +174,6 @@ export default function VideoCarousel() {
             </button>
           </div>
 
-          {/* Indicateurs de position en bas du plein écran */}
           <div className="absolute bottom-6 flex gap-2 z-40">
             {videos.map((_, i) => (
               <button
