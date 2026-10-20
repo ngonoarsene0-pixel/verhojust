@@ -1,5 +1,7 @@
 // src/services/notchpay.service.ts
 
+declare const NotchPay: any;
+
 interface NotchPayPaymentData {
   amount: number;
   currency?: string;
@@ -12,50 +14,41 @@ interface NotchPayPaymentData {
 }
 
 export const notchPayService = {
-  async initiatePayment(data: NotchPayPaymentData) {
+  async initiatePayment(data: NotchPayPaymentData): Promise<any> {
     const publicKey = import.meta.env.VITE_NOTCHPAY_PUBLIC_KEY;
 
-    const payload = {
-      amount: data.amount,
-      currency: data.currency || "XAF",
-      email: data.email,
-      name: data.name,
-      phone: data.phone,
-      description: data.description,
-      reference: data.reference,
-      callback: data.callback_url,
-    };
-
-    try {
-      const response = await fetch("https://api.notchpay.co/checkout/initialize", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          "Authorization": publicKey,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json();
-
-      if (result.status === "Accepted" && result.authorization_url) {
-        return {
-          success: true,
-          payment_url: result.authorization_url,
-          reference: result.transaction?.reference || data.reference,
-          data: result,
-        };
-      } else {
-        return {
-          success: false,
-          message: result.message || "Erreur lors de l'initialisation du paiement Notch Pay",
-          data: result,
-        };
+    return new Promise((resolve, reject) => {
+      if (typeof NotchPay === "undefined") {
+        reject(new Error("Le SDK NotchPay n'est pas encore chargé dans la page."));
+        return;
       }
-    } catch (error) {
-      console.error("Erreur Notch Pay:", error);
-      throw error;
-    }
+
+      // Initialisation du pop-up de paiement NotchPay
+      NotchPay.init({
+        key: publicKey,
+        amount: data.amount,
+        currency: data.currency || "XAF",
+        email: data.email,
+        phone: data.phone,
+        reference: data.reference,
+        description: data.description,
+        callback: data.callback_url,
+        onComplete: (response: any) => {
+          resolve({
+            success: true,
+            data: response,
+          });
+        },
+        onCancel: () => {
+          resolve({
+            success: false,
+            message: "Paiement annulé par l'utilisateur",
+          });
+        },
+        onError: (error: any) => {
+          reject(error);
+        },
+      });
+    });
   },
 };
