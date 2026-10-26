@@ -89,7 +89,7 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
 
     let finalPaymentMode = modePaiement;
 
-    // Si le client choisit Mobile Money ou Carte, on tente d'abord Notch Pay
+    // Si le client choisit Mobile Money ou Carte, on tente Notch Pay en arrière-plan sans bloquer
     if (modePaiement === "mobile_money" || modePaiement === "carte") {
       try {
         const paymentResponse = await notchPayService.initiatePayment({
@@ -104,25 +104,17 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
         });
 
         if (!paymentResponse.success) {
-          notify(
-            currentLang === "FR"
-              ? "Guichet en ligne indisponible. Basculement automatique vers le paiement à la livraison."
-              : "Online payment unavailable. Automatically switching to cash on delivery."
-          );
+          // Basculement silencieux vers les espèces sans popup d'erreur
           finalPaymentMode = "especes";
         }
       } catch (err) {
-        console.warn("Échec NotchPay, basculement automatique sur espèces :", err);
-        notify(
-          currentLang === "FR"
-            ? "Problème de connexion au guichet en ligne. Votre commande est enregistrée en espèces à la livraison."
-            : "Online gateway error. Order confirmed with Cash on Delivery."
-        );
+        console.warn("Échec NotchPay, basculement discret sur espèces :", err);
+        // Basculement silencieux vers les espèces sans popup d'erreur
         finalPaymentMode = "especes";
       }
     }
 
-    // Création garantie de la commande en BDD (Mobile Money validé ou basculé en espèces)
+    // Création de la commande en BDD de façon fluide
     try {
       const commande = await orderService.createOrder({
         idClient: clientId,
@@ -147,19 +139,11 @@ export default function CheckoutPage({ currentLang = "FR" }: CheckoutPageProps) 
       setCompletedOrder(commande);
       setStep(3);
 
-      if (finalPaymentMode === "especes" && modePaiement !== "especes") {
-        notify(
-          currentLang === "FR"
-            ? "Commande enregistrée avec succès ! Vous réglerez en espèces à la livraison."
-            : "Order recorded! You will pay cash on delivery."
-        );
-      } else {
-        notify(
-          currentLang === "FR"
-            ? "Votre commande est en cours de traitement !"
-            : "Your order is being processed!"
-        );
-      }
+      notify(
+        currentLang === "FR"
+          ? "Votre commande a été enregistrée avec succès !"
+          : "Your order has been successfully placed!"
+      );
     } catch (error) {
       console.error(error);
       notify(
